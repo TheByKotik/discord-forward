@@ -5,4 +5,4 @@ Discord Forward
 [![SemVer](https://img.shields.io/badge/SemVer-2.0.0-brightgreen.svg)](https://semver.org/spec/v2.0.0.html)
 ![Release](https://img.shields.io/github/release/sbpp/discord-forward.svg)
 
-Requred: https://github.com/KyleSanderson/SteamWorks
+Required: https://github.com/KyleSanderson/SteamWorks
