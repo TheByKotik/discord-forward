@@ -1,8 +1,10 @@
-Discord Forward
+Fork of [sbpp/discord-forward](https://github.com/sbpp/discord-forward)
 ===
-
-[![Build Status](https://travis-ci.org/sbpp/discord-forward.svg?branch=master)](https://travis-ci.org/sbpp/discord-forward)
-[![SemVer](https://img.shields.io/badge/SemVer-2.0.0-brightgreen.svg)](https://semver.org/spec/v2.0.0.html)
-![Release](https://img.shields.io/github/release/sbpp/discord-forward.svg)
+1. Now not required [smjansson](https://github.com/thraaawn/SMJansson/).
+2. Supports translation.
+3. Easy hook management.
 
 Required: https://github.com/KyleSanderson/SteamWorks
+
+[![Build Status](https://travis-ci.org/TheByKotik/sbpp_discord.svg?branch=master)](https://travis-ci.org/TheByKotik/sbpp_discord)
+![Release](https://img.shields.io/github/release/TheByKotik/sbpp_discord.svg)
