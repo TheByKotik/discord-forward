@@ -18,7 +18,7 @@ env:
 before_script:
   - wget "https://www.sourcemod.net/latest.php?version=$SOURCEMOD&os=linux" -O sourcemod-$SOURCEMOD-linux.tar.gz
   - tar -xzf sourcemod-$SOURCEMOD-linux.tar.gz
-  - mv sbpp_discord.sp addons/sourcemod/scripting/
+  - mv sourcemod/scripting/sbpp_discord.sp addons/sourcemod/scripting/
   - cd addons/sourcemod/scripting/
   - wget https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/game/addons/sourcemod/scripting/include/sourcebanspp.inc -O include/sourcebanspp.inc
   - wget https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/game/addons/sourcemod/scripting/include/sourcecomms.inc -O include/sourcecomms.inc
