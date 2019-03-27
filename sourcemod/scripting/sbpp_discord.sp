@@ -8,14 +8,14 @@ public Plugin myinfo =
 	name		= "SourceBans++ Discord Reports",
 	author		= "RumbleFrog, SourceBans++ Dev Team",
 	description = "Listens for ban & report forward and sends it to webhook endpoints",
-	version		= "1.1.0",
+	version		= "1.7.0",
 	url			= "https://sbpp.github.io"
 };
 
 #include <sourcebanspp>
 #include <sourcecomms>
 
-enum
+enum	/* Types. */
 {
 	Bans	 = 0,
 	Mutes	 = 1,
@@ -25,7 +25,7 @@ enum
 	Type_Count,
 };
 
-enum
+enum	/* Bits of g_iSettings. */
 {
 	SteamID3	= 1 << 0,
 	SteamID2	= 1 << 1,
@@ -37,7 +37,7 @@ enum
 	SilencesOn	= 1 << 7,
 	ReportsOn	= 1 << 8,
 	HookParse	= 1 << 9,
-}
+};
 
 stock char szHost[128], szHook[Type_Count][PLATFORM_MAX_PATH];
 stock int g_iHook[Type_Count];
@@ -57,12 +57,8 @@ public void OnPluginStart ()
 public void OnConfigsExecuted ()
 {
 	FindConVar( "hostname" ).GetString( szHost, sizeof szHost );
-	int ip[4];	
-	if ( SteamWorks_GetPublicIP( ip ) ) {
-		Format( szHost, sizeof szHost, "%s (%d.%d.%d.%d:%d)", szHost, ip[0], ip[1], ip[2], ip[3], FindConVar( "hostport" ).IntValue ); }
-	else {
-		int iIPB = FindConVar( "hostip" ).IntValue;
-		Format( szHost, sizeof szHost, " %s (%d.%d.%d.%d:%d)", szHost, iIPB >> 24 & 0x000000FF, iIPB >> 16 & 0x000000FF, iIPB >> 8 & 0x000000FF, iIPB & 0x000000FF, FindConVar( "hostport" ).IntValue ); }
+	int iIP = SteamWorks_GetPublicIPCell();
+	Format( szHost, sizeof szHost, "%s (%d.%d.%d.%d:%d)", szHost, iIP >> 24 & 0x000000FF, iIP >> 16 & 0x000000FF, iIP >> 8 & 0x000000FF, iIP & 0x000000FF, FindConVar( "hostport" ).IntValue );
 	if ( g_iSettings & OnConfig ) { ReloadSettings(); }
 }
 
@@ -118,9 +114,8 @@ stock void ReloadSettings ()
 	BuildPath( Path_SM, szBuf, sizeof szBuf, "configs/sbpp/discord.cfg" );
 	if ( FileExists( szBuf ) ) {
 		SMCError err = smc.ParseFile( szBuf );
-		if ( err != SMCError_Okay ) {
-			PrintToServer( "%s", smc.GetErrorString( err, szBuf, sizeof szBuf ) ? szBuf : "Fatal parse error." ); } }
-	g_iSettings = g_iSettings & ~HookParse; 
+		if ( err != SMCError_Okay ) { PrintToServer( "%s", smc.GetErrorString( err, szBuf, sizeof szBuf ) ? szBuf : "Fatal parse error." ); } }
+	g_iSettings = g_iSettings & ~HookParse;
 }
 
 stock SMCResult Settings_Parce_NewSection (SMCParser smc, const char[] szSection, bool opt_quotes)
@@ -128,6 +123,7 @@ stock SMCResult Settings_Parce_NewSection (SMCParser smc, const char[] szSection
 	if ( StrEqual( szSection, "Settings" ) ) {
 		smc.OnKeyValue = Settings_Parce_Settings; }
 	else if ( StrEqual( szSection, "Colors" ) ) {
+		g_iSettings = g_iSettings & ~HookParse;
 		smc.OnKeyValue = Settings_Parce_Hooks; }
 	else if ( StrEqual( szSection, "Hooks" ) ) {
 		g_iSettings = g_iSettings | HookParse;
@@ -185,17 +181,22 @@ stock void SendEmbed (int iAuthor, int iTarget, const char[] szMessage, int iTyp
 {
 	if ( g_iSettings & (1 << (g_iHook[iType] + 4)) ) {
 		SetGlobalTransTarget( LANG_SERVER );
-		char szJson[2048], szBuf[MAX_NAME_LENGTH], szBuf2[64], szBuf3[64], szBuf256[256];
+		char szJson[2048], szBuf[MAX_NAME_LENGTH*2+1], szBuf2[64], szBuf3[64], szBuf256[256];
 		if ( IsValidClient( iTarget ) ) {
 			GetClientName( iTarget, szBuf, sizeof szBuf );
+			EscapeString( szBuf, sizeof szBuf );
 			if ( g_iSettings & SteamID3 ) { GetClientAuthId( iTarget, AuthId_Steam3, szBuf2, sizeof szBuf2 ); }
 			if ( g_iSettings & SteamID2 ) { GetClientAuthId( iTarget, AuthId_Steam2, szBuf3, sizeof szBuf3 ); }
 			FormatEx( szBuf256, sizeof szBuf256, "%s %s%s%s%s", szBuf, (g_iSettings & SteamID3) ? szBuf2 : "", (g_iSettings & SteamID2) ? "[" : "", (g_iSettings & SteamID2) ? szBuf3 : "", (g_iSettings & SteamID2) ? "]" : ""  );
 			FormatEx( szBuf, sizeof szBuf, "%t", "Violator" );
 			AddField( szJson, sizeof szJson, szBuf, szBuf256 ); }
 		if ( szMessage[0] ) {
+			int iSize = strlen( szMessage )*2+1;
+			char[] szMsg = new char[iSize];
+			strcopy( szMsg, iSize, szMessage );
+			EscapeString( szMsg, iSize );
 			FormatEx( szBuf, sizeof szBuf, "%t", "Reason" );
-			AddField( szJson, sizeof szJson, szBuf, szMessage ); }
+			AddField( szJson, sizeof szJson, szBuf, szMsg ); }
 		if ( iType < Reports ) {
 			FormatEx( szBuf, sizeof szBuf, "%t", "Duration" );
 			if ( !iTime ) {
@@ -214,6 +215,7 @@ stock void SendEmbed (int iAuthor, int iTarget, const char[] szMessage, int iTyp
 			AddField( szJson, sizeof szJson, szBuf, szBuf2 ); }
 		if ( IsValidClient( iAuthor ) ) {
 			GetClientName( iAuthor, szBuf, sizeof szBuf );
+			EscapeString( szBuf, sizeof szBuf );
 			GetClientAuthId( iAuthor, AuthId_SteamID64, szBuf2, sizeof szBuf2 );
 			FormatEx( szBuf256, sizeof szBuf256, "\"url\": \"https://steamcommunity.com/profiles/%s\", \"name\": \"%s\"", szBuf2, szBuf ); }
 		else {
@@ -247,4 +249,10 @@ stock void AddField (char[] szJson, int iMaxSize, char[] szName, const char[] sz
 stock bool IsValidClient (int iClient)
 {
 	return (iClient > 0 && iClient <= MaxClients && IsClientInGame( iClient ));
+}
+
+stock void EscapeString (char[] szStr, int iMaxSize)
+{
+	ReplaceString( szStr, iMaxSize, "\\", "\\\\", false );
+	ReplaceString( szStr, iMaxSize, "\"", "\\\"", false );
 }
