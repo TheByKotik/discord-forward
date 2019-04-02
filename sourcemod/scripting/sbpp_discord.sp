@@ -12,8 +12,10 @@ public Plugin myinfo =
 	url			= "https://sbpp.github.io"
 };
 
-#include <sourcebanspp>
-#include <sourcecomms>
+#undef REQUIRE_PLUGIN
+	#tryinclude <sourcebanspp>
+	#tryinclude <sourcecomms>
+#define REQUIRE_PLUGIN
 
 enum	/* Types. */
 {
@@ -68,17 +70,8 @@ stock Action sm_discord_test_Handler (int iClient, int iArgs)
 		char szBuf[9], szMessage[128];
 		if ( iArgs > 1 ) { GetCmdArg( 2, szMessage, sizeof szMessage ); }
 		GetCmdArg( 1, szBuf, sizeof szBuf );
-		if ( StrEqual( "Bans", szBuf, false ) ) {
-			iArgs = Bans; }
-		else if ( StrEqual( "Silences", szBuf, false ) ) {
-			iArgs = Silences; }
-		else if ( StrEqual( "Mutes", szBuf, false ) ) {
-			iArgs = Mutes; }
-		else if ( StrEqual( "Gags", szBuf, false ) ) {
-			iArgs = Gags; }
-		else {
-			iArgs = Reports; }
-		SendEmbed( iClient, 0, szMessage[0] ? szMessage : "Testing message.", iArgs ); }
+		iArgs = StringToType( szBuf );
+		if ( iArgs != -1 ) { SendEmbed( iClient, 0, szMessage[0] ? szMessage : "Testing message.", iArgs ); } }
 	else { ReplyToCommand( iClient, "Usage: sm_discord_test \"Type\" \"Message\"" ); }
 	return Plugin_Handled;
 }
@@ -142,32 +135,12 @@ stock SMCResult Settings_Parce_Settings (SMCParser smc, const char[] szKey, cons
 
 stock SMCResult Settings_Parce_Hooks (SMCParser smc, const char[] szKey, const char[] szValue, bool key_quotes, bool value_quotes)
 {
-	if ( !StrEqual( "", szValue, true ) ) {
-		int iType = -1;
-		if ( StrEqual( "Reports", szKey, true ) ) {
-			iType = Reports; }
-		else if ( StrEqual( "Bans", szKey, true ) ) {
-			iType = Bans; }
-		else if ( StrEqual( "Silences", szKey, true ) ) {
-			iType = Silences; }
-		else if ( StrEqual( "Mutes", szKey, true ) ) {
-			iType = Mutes; }
-		else if ( StrEqual( "Gags", szKey, true ) ) {
-			iType = Gags; }
+	if ( szValue[0] ) {
+		int iType = StringToType( szKey );
 		if ( iType != -1 ) {
 			if ( g_iSettings & HookParse ) {
-				int iType2 = -1;
+				int iType2 = StringToType( szValue );
 				g_iSettings = g_iSettings | 1 << (iType + 4);
-				if ( StrEqual( "Reports", szValue, true ) ) {
-					iType2 = Reports; }
-				else if ( StrEqual( "Bans", szValue, true ) ) {
-					iType2 = Bans; }
-				else if ( StrEqual( "Silences", szValue, true ) ) {
-					iType2 = Silences; }
-				else if ( StrEqual( "Mutes", szValue, true ) ) {
-					iType2 = Mutes; }
-				else if ( StrEqual( "Gags", szValue, true ) ) {
-					iType2 = Gags; }
 				if ( iType2 == -1 ) {
 					strcopy( szHook[iType], sizeof szHook[], szValue );
 					g_iHook[iType] = iType; }
@@ -255,4 +228,14 @@ stock void EscapeString (char[] szStr, int iMaxSize)
 {
 	ReplaceString( szStr, iMaxSize, "\\", "\\\\", false );
 	ReplaceString( szStr, iMaxSize, "\"", "\\\"", false );
+}
+
+stock int StringToType (const char[] szStr)
+{
+	if ( StrEqual( "Bans", szStr, false ) ) { return Bans; }
+	else if	( StrEqual( "Silences", szStr, false ) ) { return Silences; }
+	else if	( StrEqual( "Mutes", szStr, false ) ) { return Mutes; }
+	else if	( StrEqual( "Gags", szStr, false ) ) { return Gags; }
+	else if	( StrEqual( "Reports", szStr, false ) ) { return Reports; }
+	else { return -1; }
 }
