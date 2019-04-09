@@ -8,7 +8,7 @@ public Plugin myinfo =
 	name		= "SourceBans++ Discord Reports",
 	author		= "RumbleFrog, SourceBans++ Dev Team",
 	description = "Listens for ban & report forward and sends it to webhook endpoints",
-	version		= "1.7.0",
+	version		= "1.7.0-35",
 	url			= "https://sbpp.github.io"
 };
 
@@ -32,7 +32,7 @@ enum	/* Bits of g_iSettings. */
 	SteamID3	= 1 << 0,
 	SteamID2	= 1 << 1,
 	OnConfig	= 1 << 2,
-	OnError		= 1 << 3,
+	OnMessage	= 1 << 3,
 	BansOn		= 1 << 4,
 	MutesOn		= 1 << 5,
 	GagsOn		= 1 << 6,
@@ -153,6 +153,7 @@ stock SMCResult Settings_Parce_Hooks (SMCParser smc, const char[] szKey, const c
 stock void SendEmbed (int iAuthor, int iTarget, const char[] szMessage, int iType, int iTime = 0)
 {
 	if ( g_iSettings & (1 << (g_iHook[iType] + 4)) ) {
+		if ( g_iSettings & OnMessage ) { ReloadSettings(); }
 		SetGlobalTransTarget( LANG_SERVER );
 		char szJson[2048], szBuf[MAX_NAME_LENGTH*2+1], szBuf2[64], szBuf3[64], szBuf256[256];
 		if ( IsValidClient( iTarget ) ) {
@@ -200,16 +201,13 @@ stock void SendEmbed (int iAuthor, int iTarget, const char[] szMessage, int iTyp
 			szHost );
 		Handle hRequest = SteamWorks_CreateHTTPRequest( k_EHTTPMethodPOST, szHook[ g_iHook[iType] ] );
 		if ( !hRequest || !SteamWorks_SetHTTPRequestGetOrPostParameter( hRequest, "payload_json", szJson ) || !SteamWorks_SetHTTPCallbacks( hRequest, OnHTTPRequestComplete ) || !SteamWorks_SendHTTPRequest( hRequest ) ) {
-			if ( g_iSettings & OnError ) {
-				ReloadSettings();
 				LogError( "HTTP request failed." );
-				delete hRequest; } } }
+				delete hRequest; } }
 }
 
 stock void OnHTTPRequestComplete (Handle hRequest, bool bFailure, bool bRequestSuccessful, EHTTPStatusCode eStatusCode)
 {
 	if ( bFailure || !bRequestSuccessful && eStatusCode != k_EHTTPStatusCode200OK ) {
-		if ( g_iSettings & OnError ) { ReloadSettings(); }
 		LogError( "HTTP request failed." ); }
 	delete hRequest;
 }
