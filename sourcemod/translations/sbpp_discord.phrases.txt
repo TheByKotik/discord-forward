@@ -10,6 +10,16 @@
 		"en"		"Violator:"
 		"ru"		"Нарушитель:"
 	}
+	"Map"
+	{
+		"en"		"Map:"
+		"ru"		"Карта:"
+	}
+	"Time"
+	{
+		"en"		"Time:"
+		"ru"		"Время:"
+	}
 	"Reason"
 	{
 		"en"		"Reason:"

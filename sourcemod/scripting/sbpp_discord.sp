@@ -8,7 +8,7 @@ public Plugin myinfo =
 	name		= "SourceBans++ Discord Reports",
 	author		= "RumbleFrog, SourceBans++ Dev Team",
 	description = "Listens for ban & report forward and sends it to webhook endpoints",
-	version		= "1.7.0-35",
+	version		= "1.7.0-36",
 	url			= "https://sbpp.github.io"
 };
 
@@ -27,18 +27,29 @@ enum	/* Types. */
 	Type_Count,
 };
 
-enum	/* Bits of g_iSettings. */
+enum	/* g_iSettings. */
 {
-	SteamID3	= 1 << 0,
-	SteamID2	= 1 << 1,
-	OnConfig	= 1 << 2,
-	OnMessage	= 1 << 3,
-	BansOn		= 1 << 4,
-	MutesOn		= 1 << 5,
-	GagsOn		= 1 << 6,
-	SilencesOn	= 1 << 7,
-	ReportsOn	= 1 << 8,
-	HookParse	= 1 << 9,
+	Start_Reloads,
+		OnConfig = Start_Reloads,
+		OnMessage,
+	Start_SteamID,
+		SteamID3 = Start_SteamID,
+		SteamID2,
+	Start_Times,
+		Time = Start_Times,
+		Timestamp,
+	Map,
+	Start_Hooks,
+		BansOn = Start_Hooks,
+		MutesOn,
+		GagsOn,
+		SilencesOn,
+		ReportsOn,
+	HookParse = 1 << 31,
+	SteamID	= (1 << SteamID3) + (1 << SteamID2),
+	Times	= (1 << Time) + (1 << Timestamp),
+	Reloads	= (1 << OnConfig) + (1 << OnMessage),
+	Hooks	= (1 << BansOn) + (1 << MutesOn) + (1 << GagsOn) + (1 << SilencesOn) + (1 << ReportsOn),
 };
 
 stock char szHost[128], szHook[Type_Count][PLATFORM_MAX_PATH];
@@ -48,10 +59,10 @@ stock int g_iEmbedColors[Type_Count] = { 0xDA1D87, 0x4362FA, 0x4362FA, 0x4362FA,
 
 public void OnPluginStart ()
 {
-	LoadTranslations( "sbpp_discord.phrases" );
 	LoadTranslations( "sbpp_comms.phrases" );
+	LoadTranslations( "sbpp_discord.phrases" );
 	RegAdminCmd( "sm_discord_test", sm_discord_test_Handler, ADMFLAG_CONFIG | ADMFLAG_RCON, "Send test message to hook." );
-	RegAdminCmd( "sm_discord_reload", sm_discord_reload_Handler, ADMFLAG_CONFIG, "Reload config." );
+	RegAdminCmd( "sm_discord_reload", sm_discord_reload_Handler, ADMFLAG_CONFIG, "Reload config of sbpp_discord." );
 	OnConfigsExecuted();
 	ReloadSettings();
 }
@@ -61,17 +72,20 @@ public void OnConfigsExecuted ()
 	FindConVar( "hostname" ).GetString( szHost, sizeof szHost );
 	int iIP = SteamWorks_GetPublicIPCell();
 	Format( szHost, sizeof szHost, "%s (%d.%d.%d.%d:%d)", szHost, iIP >> 24 & 0x000000FF, iIP >> 16 & 0x000000FF, iIP >> 8 & 0x000000FF, iIP & 0x000000FF, FindConVar( "hostport" ).IntValue );
-	if ( g_iSettings & OnConfig ) { ReloadSettings(); }
+	if ( g_iSettings & (1 << OnConfig) ) { ReloadSettings(); }
 }
 
 stock Action sm_discord_test_Handler (int iClient, int iArgs)
 {
 	if ( iArgs ) {
 		char szBuf[9], szMessage[128];
-		if ( iArgs > 1 ) { GetCmdArg( 2, szMessage, sizeof szMessage ); }
 		GetCmdArg( 1, szBuf, sizeof szBuf );
+		if ( iArgs > 1 ) { GetCmdArg( 2, szMessage, sizeof szMessage ); }
 		iArgs = StringToType( szBuf );
-		if ( iArgs != -1 ) { SendEmbed( iClient, 0, szMessage[0] ? szMessage : "Testing message.", iArgs ); } }
+		if ( iArgs != -1 ) {
+			SendEmbed( iClient, 0, szMessage[0] ? szMessage : "Testing message.", iArgs );
+			ReplyToCommand( iClient, "Test message have been send." ); }
+		else { ReplyToCommand( iClient, "Unknown hook type." ); } }
 	else { ReplyToCommand( iClient, "Usage: sm_discord_test \"Type\" \"Message\"" ); }
 	return Plugin_Handled;
 }
@@ -79,6 +93,7 @@ stock Action sm_discord_test_Handler (int iClient, int iArgs)
 stock Action sm_discord_reload_Handler (int iClient, int iArgs)
 {
 	ReloadSettings();
+	ReplyToCommand( iClient, "Config have been reloaded." );
 	return Plugin_Handled;
 }
 
@@ -99,7 +114,7 @@ public void SBPP_OnReportPlayer (int iReporter, int iTarget, const char[] szReas
 
 stock void ReloadSettings ()
 {
-	g_iSettings = 1;
+	g_iSettings = 4;
 	g_iEmbedColors = { 0xDA1D87, 0x4362FA, 0x4362FA, 0x4362FA, 0xF9D942 };
 	SMCParser smc = new SMCParser();
 	smc.OnEnterSection = Settings_Parce_NewSection;
@@ -127,9 +142,13 @@ stock SMCResult Settings_Parce_NewSection (SMCParser smc, const char[] szSection
 stock SMCResult Settings_Parce_Settings (SMCParser smc, const char[] szKey, const char[] szValue, bool key_quotes, bool value_quotes)
 {
 	if ( StrEqual( "SteamID Version", szKey, true ) ) {
-		g_iSettings = (g_iSettings & ~3) | StringToInt( szValue ); }
+		g_iSettings = g_iSettings | ((StringToInt( szValue ) << Start_SteamID) & SteamID ); }
 	else if ( StrEqual( "Reload On", szKey, true ) ) {
-		g_iSettings = g_iSettings | (StringToInt( szValue ) << 2); }
+		g_iSettings = g_iSettings | ((StringToInt( szValue ) << Start_Reloads) & Reloads); }
+	else if ( StrEqual( "Map", szKey, true ) ) {
+		g_iSettings = g_iSettings | ((StringToInt( szValue ) & 1) << Map); }
+	else if ( StrEqual( "Time", szKey, true ) ) {
+		g_iSettings = g_iSettings | ((StringToInt( szValue ) << Start_Times) & Times); }
 	return SMCParse_Continue;
 }
 
@@ -140,7 +159,7 @@ stock SMCResult Settings_Parce_Hooks (SMCParser smc, const char[] szKey, const c
 		if ( iType != -1 ) {
 			if ( g_iSettings & HookParse ) {
 				int iType2 = StringToType( szValue );
-				g_iSettings = g_iSettings | 1 << (iType + 4);
+				g_iSettings = g_iSettings | 1 << (iType + Start_Hooks);
 				if ( iType2 == -1 ) {
 					strcopy( szHook[iType], sizeof szHook[], szValue );
 					g_iHook[iType] = iType; }
@@ -150,18 +169,18 @@ stock SMCResult Settings_Parce_Hooks (SMCParser smc, const char[] szKey, const c
 	return SMCParse_Continue;
 }
 
-stock void SendEmbed (int iAuthor, int iTarget, const char[] szMessage, int iType, int iTime = 0)
+stock void SendEmbed (int iAuthor, int iTarget, const char[] szMessage, int iType, int iTime = -2)
 {
-	if ( g_iSettings & (1 << (g_iHook[iType] + 4)) ) {
-		if ( g_iSettings & OnMessage ) { ReloadSettings(); }
+	if ( g_iSettings & (1 << (g_iHook[iType] + Start_Hooks)) ) {
+		if ( g_iSettings & (1 << OnMessage) ) { ReloadSettings(); }
 		SetGlobalTransTarget( LANG_SERVER );
-		char szJson[2048], szBuf[MAX_NAME_LENGTH*2+1], szBuf2[64], szBuf3[64], szBuf256[256];
+		char szJson[3072], szBuf[MAX_NAME_LENGTH*2+1], szBuf2[64], szBuf3[64], szBuf256[256];
 		if ( IsValidClient( iTarget ) ) {
 			GetClientName( iTarget, szBuf, sizeof szBuf );
 			EscapeString( szBuf, sizeof szBuf );
-			if ( g_iSettings & SteamID3 ) { GetClientAuthId( iTarget, AuthId_Steam3, szBuf2, sizeof szBuf2 ); }
-			if ( g_iSettings & SteamID2 ) { GetClientAuthId( iTarget, AuthId_Steam2, szBuf3, sizeof szBuf3 ); }
-			FormatEx( szBuf256, sizeof szBuf256, "%s %s%s%s%s", szBuf, (g_iSettings & SteamID3) ? szBuf2 : "", (g_iSettings & SteamID2) ? "[" : "", (g_iSettings & SteamID2) ? szBuf3 : "", (g_iSettings & SteamID2) ? "]" : ""  );
+			if ( g_iSettings & (1 << SteamID3) ) { GetClientAuthId( iTarget, AuthId_Steam3, szBuf2, sizeof szBuf2 ); }
+			if ( g_iSettings & (1 << SteamID2) ) { GetClientAuthId( iTarget, AuthId_Steam2, szBuf3, sizeof szBuf3 ); }
+			FormatEx( szBuf256, sizeof szBuf256, "%s %s%s%s%s", szBuf, (g_iSettings & (1 << SteamID3)) ? szBuf2 : "", (g_iSettings & (1 << SteamID2)) ? "[" : "", (g_iSettings & (1 << SteamID2)) ? szBuf3 : "", (g_iSettings & (1 << SteamID2)) ? "]" : ""  );
 			FormatEx( szBuf, sizeof szBuf, "%t", "Violator" );
 			AddField( szJson, sizeof szJson, szBuf, szBuf256 ); }
 		if ( szMessage[0] ) {
@@ -171,7 +190,7 @@ stock void SendEmbed (int iAuthor, int iTarget, const char[] szMessage, int iTyp
 			EscapeString( szMsg, iSize );
 			FormatEx( szBuf, sizeof szBuf, "%t", "Reason" );
 			AddField( szJson, sizeof szJson, szBuf, szMsg ); }
-		if ( iType < Reports ) {
+		if ( iType < Reports && iTime > -2 ) {
 			FormatEx( szBuf, sizeof szBuf, "%t", "Duration" );
 			if ( !iTime ) {
 				FormatEx( szBuf2, sizeof szBuf2, "%t", "ReasonPanel_Perm" ); }
@@ -187,6 +206,19 @@ stock void SendEmbed (int iAuthor, int iTarget, const char[] szMessage, int iTyp
 				case Gags: FormatEx( szBuf2, sizeof szBuf2, "%t", "Gag");
 				case Silences: FormatEx( szBuf2, sizeof szBuf2, "%t", "Silence"); }
 			AddField( szJson, sizeof szJson, szBuf, szBuf2 ); }
+		if ( g_iSettings & Times ) {
+			int iTimestamp = GetTime();
+			FormatEx( szBuf2, sizeof szBuf2, "%t", "Time" );
+			if ( g_iSettings & (1 << Time) ) { FormatTime( szBuf3, sizeof szBuf3, "%Y.%m.%d — %H:%M:%S.", iTimestamp ); }
+			if ( g_iSettings & (1 << Timestamp) ) {
+				FormatEx( szBuf256, sizeof szBuf256, "%s%s%i%s", g_iSettings & (1 << Time) ? szBuf3 : "", g_iSettings & (1 << Time) ? " | " : "", iTimestamp, g_iSettings & (1 << Time) ? "." : "" );
+				AddField( szJson, sizeof szJson, szBuf2, szBuf256 ); }
+			else {
+				AddField( szJson, sizeof szJson, szBuf2, szBuf3 ); } }
+		if ( g_iSettings & (1 << Map) ) {
+			GetCurrentMap( szBuf256, sizeof szBuf256 );
+			FormatEx( szBuf2, sizeof szBuf2, "%t", "Map" );
+			AddField( szJson, sizeof szJson, szBuf2, szBuf256 ); }
 		if ( IsValidClient( iAuthor ) ) {
 			GetClientName( iAuthor, szBuf, sizeof szBuf );
 			EscapeString( szBuf, sizeof szBuf );
