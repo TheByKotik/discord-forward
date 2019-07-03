@@ -8,7 +8,7 @@ public Plugin myinfo =
 	name		= "SourceBans++ Discord Reports",
 	author		= "RumbleFrog, SourceBans++ Dev Team",
 	description = "Listens for ban & report forward and sends it to webhook endpoints",
-	version		= "1.7.0-36",
+	version		= "1.7.0-38",
 	url			= "https://sbpp.github.io"
 };
 
@@ -114,7 +114,7 @@ public void SBPP_OnReportPlayer (int iReporter, int iTarget, const char[] szReas
 
 stock void ReloadSettings ()
 {
-	g_iSettings = 4;
+	g_iSettings = (1 << SteamID3);
 	g_iEmbedColors = { 0xDA1D87, 0x4362FA, 0x4362FA, 0x4362FA, 0xF9D942 };
 	SMCParser smc = new SMCParser();
 	smc.OnEnterSection = Settings_Parce_NewSection;
@@ -233,14 +233,13 @@ stock void SendEmbed (int iAuthor, int iTarget, const char[] szMessage, int iTyp
 			szHost );
 		Handle hRequest = SteamWorks_CreateHTTPRequest( k_EHTTPMethodPOST, szHook[ g_iHook[iType] ] );
 		if ( !hRequest || !SteamWorks_SetHTTPRequestGetOrPostParameter( hRequest, "payload_json", szJson ) || !SteamWorks_SetHTTPCallbacks( hRequest, OnHTTPRequestComplete ) || !SteamWorks_SendHTTPRequest( hRequest ) ) {
-				LogError( "HTTP request failed." );
-				delete hRequest; } }
+			LogError( "Create HTTP request failed." );
+			delete hRequest; } }
 }
 
 stock void OnHTTPRequestComplete (Handle hRequest, bool bFailure, bool bRequestSuccessful, EHTTPStatusCode eStatusCode)
 {
-	if ( bFailure || !bRequestSuccessful && eStatusCode != k_EHTTPStatusCode200OK ) {
-		LogError( "HTTP request failed." ); }
+	if ( bFailure || !bRequestSuccessful || eStatusCode != k_EHTTPStatusCode204NoContent ) { LogError( "HTTP request failed with code: %i.%s", eStatusCode, (eStatusCode == k_EHTTPStatusCodeInvalid || eStatusCode == k_EHTTPStatusCode200OK) ? " Webhooks url can be incorrect." : "" ); }
 	delete hRequest;
 }
 
