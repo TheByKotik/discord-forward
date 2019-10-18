@@ -3,32 +3,27 @@
 #pragma newdecls required
 #pragma semicolon 1
 
-public Plugin myinfo =
-{
-	name		= "SourceBans++ Discord Reports",
-	author		= "RumbleFrog, SourceBans++ Dev Team",
-	description = "Listens for ban & report forward and sends it to webhook endpoints",
-	version		= "1.7.0-38",
-	url			= "https://sbpp.github.io"
-};
+public Plugin myinfo = {
+	name		= "SourceBans++ Discord",
+	author		= "Kotik. Fork of RumbleFrog, SourceBans++ Dev Team.",
+	description = "Listens forwards of bans, comms, reports and sends it to Discord webhooks.",
+	version		= "1.7.0-39",
+	url			= "https://github.com/TheByKotik/sbpp_discord" };
 
 #undef REQUIRE_PLUGIN
 	#tryinclude <sourcebanspp>
 	#tryinclude <sourcecomms>
 #define REQUIRE_PLUGIN
 
-enum	/* Types. */
-{
-	Bans	 = 0,
-	Mutes	 = 1,
-	Gags	 = 2,
-	Silences = 3,
-	Reports	 = 4,
-	Type_Count,
-};
-
-enum	/* g_iSettings. */
-{
+enum	/* Types. */ {
+	Type_Unknown = -1,
+	Type_Ban,
+	Type_Mute,
+	Type_Gag,
+	Type_Silence,
+	Type_Report,
+	Types, };
+enum	/* g_iSettings. */ {
 	Start_Reloads,
 		OnConfig = Start_Reloads,
 		OnMessage,
@@ -49,13 +44,9 @@ enum	/* g_iSettings. */
 	SteamID	= (1 << SteamID3) + (1 << SteamID2),
 	Times	= (1 << Time) + (1 << Timestamp),
 	Reloads	= (1 << OnConfig) + (1 << OnMessage),
-	Hooks	= (1 << BansOn) + (1 << MutesOn) + (1 << GagsOn) + (1 << SilencesOn) + (1 << ReportsOn),
-};
-
-stock char szHost[128], szHook[Type_Count][PLATFORM_MAX_PATH];
-stock int g_iHook[Type_Count];
-stock int g_iSettings;
-stock int g_iEmbedColors[Type_Count] = { 0xDA1D87, 0x4362FA, 0x4362FA, 0x4362FA, 0xF9D942 };
+	Hooks	= (1 << BansOn) + (1 << MutesOn) + (1 << GagsOn) + (1 << SilencesOn) + (1 << ReportsOn), };
+stock char g_szHost[128], g_szHook[Types][PLATFORM_MAX_PATH];
+stock int g_iHook[Types], g_iSettings, g_iEmbedColors[Types] = { 0xDA1D87, 0x4362FA, 0x4362FA, 0x4362FA, 0xF9D942 };
 
 public void OnPluginStart ()
 {
@@ -69,107 +60,111 @@ public void OnPluginStart ()
 
 public void OnConfigsExecuted ()
 {
-	FindConVar( "hostname" ).GetString( szHost, sizeof szHost );
+	FindConVar( "hostname" ).GetString( g_szHost, sizeof g_szHost );
 	int iIP = SteamWorks_GetPublicIPCell();
-	Format( szHost, sizeof szHost, "%s (%d.%d.%d.%d:%d)", szHost, iIP >> 24 & 0x000000FF, iIP >> 16 & 0x000000FF, iIP >> 8 & 0x000000FF, iIP & 0x000000FF, FindConVar( "hostport" ).IntValue );
+	Format( g_szHost, sizeof g_szHost, "%s (%d.%d.%d.%d:%d)", g_szHost, iIP >> 24 & 0x000000FF, iIP >> 16 & 0x000000FF, iIP >> 8 & 0x000000FF, iIP & 0x000000FF, FindConVar( "hostport" ).IntValue );
 	if ( g_iSettings & (1 << OnConfig) ) { ReloadSettings(); }
 }
 
-stock Action sm_discord_test_Handler (int iClient, int iArgs)
+stock Action sm_discord_test_Handler (const int iClient, int iArgs)
 {
 	if ( iArgs ) {
 		char szBuf[9], szMessage[128];
 		GetCmdArg( 1, szBuf, sizeof szBuf );
 		if ( iArgs > 1 ) { GetCmdArg( 2, szMessage, sizeof szMessage ); }
 		iArgs = StringToType( szBuf );
-		if ( iArgs != -1 ) {
-			SendEmbed( iClient, 0, szMessage[0] ? szMessage : "Testing message.", iArgs );
-			ReplyToCommand( iClient, "Test message have been send." ); }
-		else { ReplyToCommand( iClient, "Unknown hook type." ); } }
-	else { ReplyToCommand( iClient, "Usage: sm_discord_test \"Type\" \"Message\"" ); }
+		if ( iArgs != Type_Unknown ) {
+			SendEmbed( iClient, 0, szMessage[0] ? szMessage : "(╯°□°）╯︵ ┻━┻", iArgs );
+			ReplyToCommand( iClient, "%t", "Test message have been send." ); }
+		else { ReplyToCommand( iClient, "%t", "Unknown hook type." ); } }
+	else { ReplyToCommand( iClient, "%t", "Usage: sm_discord_test" ); }
 	return Plugin_Handled;
 }
 
-stock Action sm_discord_reload_Handler (int iClient, int iArgs)
+stock Action sm_discord_reload_Handler (const int iClient, const int iArgs)
 {
 	ReloadSettings();
-	ReplyToCommand( iClient, "Config have been reloaded." );
+	ReplyToCommand( iClient, "%t", "Config have been reloaded." );
 	return Plugin_Handled;
 }
 
+#if defined _sourcebanspp_included
 public void SBPP_OnBanPlayer (int iAdmin, int iTarget, int iTime, const char[] szReason)
 {
-	SendEmbed( iAdmin, iTarget, szReason, Bans, iTime );
-}
-
-public void SourceComms_OnBlockAdded (int iAdmin, int iTarget, int iTime, int iCommType, char[] szReason)
-{
-	SendEmbed( iAdmin, iTarget, szReason, iCommType, iTime );
+	SendEmbed( iAdmin, iTarget, szReason, Type_Ban, iTime );
 }
 
 public void SBPP_OnReportPlayer (int iReporter, int iTarget, const char[] szReason)
 {
-	SendEmbed( iReporter, iTarget, szReason, Reports );
+	SendEmbed( iReporter, iTarget, szReason, Type_Report );
 }
+#endif
+
+#if defined _sourcecomms_included
+public void SourceComms_OnBlockAdded (int iAdmin, int iTarget, int iTime, int iCommType, char[] szReason)
+{
+	SendEmbed( iAdmin, iTarget, szReason, iCommType, iTime );
+}
+#endif
 
 stock void ReloadSettings ()
 {
 	g_iSettings = (1 << SteamID3);
 	g_iEmbedColors = { 0xDA1D87, 0x4362FA, 0x4362FA, 0x4362FA, 0xF9D942 };
-	SMCParser smc = new SMCParser();
-	smc.OnEnterSection = Settings_Parce_NewSection;
+	SMCParser Parser = new SMCParser();
+	Parser.OnEnterSection = Settings_Parce_NewSection;
 	char szBuf[PLATFORM_MAX_PATH];
 	BuildPath( Path_SM, szBuf, sizeof szBuf, "configs/sbpp/discord.cfg" );
 	if ( FileExists( szBuf ) ) {
-		SMCError err = smc.ParseFile( szBuf );
-		if ( err != SMCError_Okay ) { PrintToServer( "%s", smc.GetErrorString( err, szBuf, sizeof szBuf ) ? szBuf : "Fatal parse error." ); } }
+		SMCError Status = Parser.ParseFile( szBuf );
+		if ( Status != SMCError_Okay ) { LogError(Parser.GetErrorString( Status, szBuf, sizeof szBuf ) ? szBuf : "%t", "Unknown config parse error." ); } }
 	g_iSettings = g_iSettings & ~HookParse;
 }
 
-stock SMCResult Settings_Parce_NewSection (SMCParser smc, const char[] szSection, bool opt_quotes)
+stock SMCResult Settings_Parce_NewSection (const SMCParser Parser, const char[] szSection, const bool opt_quotes)
 {
-	if ( StrEqual( szSection, "Settings" ) ) {
-		smc.OnKeyValue = Settings_Parce_Settings; }
-	else if ( StrEqual( szSection, "Colors" ) ) {
+	if ( !strcmp( szSection, "Settings" ) ) {
+		Parser.OnKeyValue = Settings_Parce_Settings; }
+	else if ( !strcmp( szSection, "Colors" ) ) {
 		g_iSettings = g_iSettings & ~HookParse;
-		smc.OnKeyValue = Settings_Parce_Hooks; }
-	else if ( StrEqual( szSection, "Hooks" ) ) {
+		Parser.OnKeyValue = Settings_Parce_Hooks; }
+	else if ( !strcmp( szSection, "Hooks" ) ) {
 		g_iSettings = g_iSettings | HookParse;
-		smc.OnKeyValue = Settings_Parce_Hooks; }
+		Parser.OnKeyValue = Settings_Parce_Hooks; }
 	return SMCParse_Continue;
 }
 
-stock SMCResult Settings_Parce_Settings (SMCParser smc, const char[] szKey, const char[] szValue, bool key_quotes, bool value_quotes)
+stock SMCResult Settings_Parce_Settings (const SMCParser Parser, const char[] szKey, const char[] szValue, const bool key_quotes, const bool value_quotes)
 {
-	if ( StrEqual( "SteamID Version", szKey, true ) ) {
+	if ( !strcmp( "SteamID Version", szKey, true ) ) {
 		g_iSettings = g_iSettings | ((StringToInt( szValue ) << Start_SteamID) & SteamID ); }
-	else if ( StrEqual( "Reload On", szKey, true ) ) {
+	else if ( !strcmp( "Reload On", szKey, true ) ) {
 		g_iSettings = g_iSettings | ((StringToInt( szValue ) << Start_Reloads) & Reloads); }
-	else if ( StrEqual( "Map", szKey, true ) ) {
+	else if ( !strcmp( "Map", szKey, true ) ) {
 		g_iSettings = g_iSettings | ((StringToInt( szValue ) & 1) << Map); }
-	else if ( StrEqual( "Time", szKey, true ) ) {
+	else if ( !strcmp( "Time", szKey, true ) ) {
 		g_iSettings = g_iSettings | ((StringToInt( szValue ) << Start_Times) & Times); }
 	return SMCParse_Continue;
 }
 
-stock SMCResult Settings_Parce_Hooks (SMCParser smc, const char[] szKey, const char[] szValue, bool key_quotes, bool value_quotes)
+stock SMCResult Settings_Parce_Hooks (const SMCParser Parser, const char[] szKey, const char[] szValue, const bool key_quotes, const bool value_quotes)
 {
 	if ( szValue[0] ) {
-		int iType = StringToType( szKey );
-		if ( iType != -1 ) {
+		int iTypeFrom = StringToType( szKey );
+		if ( iTypeFrom != Type_Unknown ) {
 			if ( g_iSettings & HookParse ) {
-				int iType2 = StringToType( szValue );
-				g_iSettings = g_iSettings | 1 << (iType + Start_Hooks);
-				if ( iType2 == -1 ) {
-					strcopy( szHook[iType], sizeof szHook[], szValue );
-					g_iHook[iType] = iType; }
+				int iTypeTo = StringToType( szValue );
+				g_iSettings = g_iSettings | 1 << (iTypeFrom + Start_Hooks);
+				if ( iTypeTo == Type_Unknown ) {
+					strcopy( g_szHook[iTypeFrom], sizeof g_szHook[], szValue );
+					g_iHook[iTypeFrom] = iTypeFrom; }
 				else {
-					g_iHook[iType] = iType2; } }
-			else { g_iEmbedColors[iType] = StringToInt( szValue, 16 ); } } }
+					g_iHook[iTypeFrom] = iTypeTo; } }
+			else { g_iEmbedColors[iTypeFrom] = StringToInt( szValue, 16 ); } } }
 	return SMCParse_Continue;
 }
 
-stock void SendEmbed (int iAuthor, int iTarget, const char[] szMessage, int iType, int iTime = -2)
+stock void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, const int iType, const int iTime = -2)
 {
 	if ( g_iSettings & (1 << (g_iHook[iType] + Start_Hooks)) ) {
 		if ( g_iSettings & (1 << OnMessage) ) { ReloadSettings(); }
@@ -190,7 +185,7 @@ stock void SendEmbed (int iAuthor, int iTarget, const char[] szMessage, int iTyp
 			EscapeString( szMsg, iSize );
 			FormatEx( szBuf, sizeof szBuf, "%t", "Reason" );
 			AddField( szJson, sizeof szJson, szBuf, szMsg ); }
-		if ( iType < Reports && iTime > -2 ) {
+		if ( iType < Type_Report && iTime > -2 ) {
 			FormatEx( szBuf, sizeof szBuf, "%t", "Duration" );
 			if ( !iTime ) {
 				FormatEx( szBuf2, sizeof szBuf2, "%t", "ReasonPanel_Perm" ); }
@@ -199,12 +194,12 @@ stock void SendEmbed (int iAuthor, int iTarget, const char[] szMessage, int iTyp
 			else {
 				FormatEx( szBuf2, sizeof szBuf2, "%t", "ReasonPanel_Time", iTime ); }
 			AddField( szJson, sizeof szJson, szBuf, szBuf2 ); }
-		if ( iType > Bans && iType < Reports ) {
+		if ( iType > Type_Ban && iType < Type_Report ) {
 			FormatEx( szBuf, sizeof szBuf, "%t", "CommType" );
 			switch ( iType ) {
-				case Mutes: FormatEx( szBuf2, sizeof szBuf2, "%t", "Mute");
-				case Gags: FormatEx( szBuf2, sizeof szBuf2, "%t", "Gag");
-				case Silences: FormatEx( szBuf2, sizeof szBuf2, "%t", "Silence"); }
+				case Type_Mute: FormatEx( szBuf2, sizeof szBuf2, "%t", "Mute");
+				case Type_Gag: FormatEx( szBuf2, sizeof szBuf2, "%t", "Gag");
+				case Type_Silence: FormatEx( szBuf2, sizeof szBuf2, "%t", "Silence"); }
 			AddField( szJson, sizeof szJson, szBuf, szBuf2 ); }
 		if ( g_iSettings & Times ) {
 			int iTimestamp = GetTime();
@@ -221,6 +216,7 @@ stock void SendEmbed (int iAuthor, int iTarget, const char[] szMessage, int iTyp
 			AddField( szJson, sizeof szJson, szBuf2, szBuf256 ); }
 		if ( IsValidClient( iAuthor ) ) {
 			GetClientName( iAuthor, szBuf, sizeof szBuf );
+			Format( szBuf, sizeof szBuf, "[%s]", szBuf );	/* Bad fix for non printable chars nicknames. */
 			EscapeString( szBuf, sizeof szBuf );
 			GetClientAuthId( iAuthor, AuthId_SteamID64, szBuf2, sizeof szBuf2 );
 			FormatEx( szBuf256, sizeof szBuf256, "\"url\": \"https://steamcommunity.com/profiles/%s\", \"name\": \"%s\"", szBuf2, szBuf ); }
@@ -230,30 +226,30 @@ stock void SendEmbed (int iAuthor, int iTarget, const char[] szMessage, int iTyp
 			g_iEmbedColors[iType],
 			szBuf256,
 			szJson,
-			szHost );
-		Handle hRequest = SteamWorks_CreateHTTPRequest( k_EHTTPMethodPOST, szHook[ g_iHook[iType] ] );
+			g_szHost );
+		Handle hRequest = SteamWorks_CreateHTTPRequest( k_EHTTPMethodPOST, g_szHook[ g_iHook[iType] ] );
 		if ( !hRequest || !SteamWorks_SetHTTPRequestGetOrPostParameter( hRequest, "payload_json", szJson ) || !SteamWorks_SetHTTPCallbacks( hRequest, OnHTTPRequestComplete ) || !SteamWorks_SendHTTPRequest( hRequest ) ) {
-			LogError( "Create HTTP request failed." );
+			LogError( "%t", "Create HTTP request failed." );
 			delete hRequest; } }
 }
 
-stock void OnHTTPRequestComplete (Handle hRequest, bool bFailure, bool bRequestSuccessful, EHTTPStatusCode eStatusCode)
+stock void OnHTTPRequestComplete (Handle hRequest, const bool bFailure, const bool bRequestSuccessful, const EHTTPStatusCode eStatusCode)
 {
-	if ( bFailure || !bRequestSuccessful || eStatusCode != k_EHTTPStatusCode204NoContent ) { LogError( "HTTP request failed with code: %i.%s", eStatusCode, (eStatusCode == k_EHTTPStatusCodeInvalid || eStatusCode == k_EHTTPStatusCode200OK) ? " Webhooks url can be incorrect." : "" ); }
+	if ( bFailure || !bRequestSuccessful || eStatusCode != k_EHTTPStatusCode204NoContent ) { LogError( "%t", "HTTP request failed with code: %i.%s", eStatusCode, (eStatusCode == k_EHTTPStatusCodeInvalid || eStatusCode == k_EHTTPStatusCode200OK) ? " Webhooks url can be incorrect." : "Empty" ); }
 	delete hRequest;
 }
 
-stock void AddField (char[] szJson, int iMaxSize, char[] szName, const char[] szValue, bool bInline = false)
+stock void AddField (char[] szJson, const int iMaxSize, const char[] szName, const char[] szValue, const bool bInline = false)
 {
 	Format( szJson, iMaxSize, "%s%s{\"name\": \"%s\", \"value\": \"%s\"%s}", szJson, szJson[0] ? ", " : "", szName, szValue, bInline ? ", \"inline\": true" : "" );
 }
 
-stock bool IsValidClient (int iClient)
+stock bool IsValidClient (const int iClient)
 {
 	return (iClient > 0 && iClient <= MaxClients && IsClientInGame( iClient ));
 }
 
-stock void EscapeString (char[] szStr, int iMaxSize)
+stock void EscapeString (char[] szStr, const int iMaxSize)
 {
 	ReplaceString( szStr, iMaxSize, "\\", "\\\\", false );
 	ReplaceString( szStr, iMaxSize, "\"", "\\\"", false );
@@ -261,10 +257,10 @@ stock void EscapeString (char[] szStr, int iMaxSize)
 
 stock int StringToType (const char[] szStr)
 {
-	if ( StrEqual( "Bans", szStr, false ) ) { return Bans; }
-	else if	( StrEqual( "Silences", szStr, false ) ) { return Silences; }
-	else if	( StrEqual( "Mutes", szStr, false ) ) { return Mutes; }
-	else if	( StrEqual( "Gags", szStr, false ) ) { return Gags; }
-	else if	( StrEqual( "Reports", szStr, false ) ) { return Reports; }
-	else { return -1; }
+	if ( !strcmp( "Bans", szStr, false ) ) { return Type_Ban; }
+	else if	( !strcmp( "Silences", szStr, false ) ) { return Type_Silence; }
+	else if	( !strcmp( "Mutes", szStr, false ) ) { return Type_Mute; }
+	else if	( !strcmp( "Gags", szStr, false ) ) { return Type_Gag; }
+	else if	( !strcmp( "Reports", szStr, false ) ) { return Type_Report; }
+	else { return Type_Unknown; }
 }

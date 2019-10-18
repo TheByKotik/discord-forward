@@ -2,52 +2,97 @@
 {
 	"Author Console"
 	{
-		"en"		"Console"
-		"ru"		"Консоль"
-	}
-	"Violator"
-	{
-		"en"		"Violator:"
-		"ru"		"Нарушитель:"
-	}
-	"Map"
-	{
-		"en"		"Map:"
-		"ru"		"Карта:"
-	}
-	"Time"
-	{
-		"en"		"Time:"
-		"ru"		"Время:"
-	}
-	"Reason"
-	{
-		"en"		"Reason:"
-		"ru"		"Причина:"
-	}
-	"Duration"
-	{
-		"en"		"Duration:"
-		"ru"		"Длительность:"
+		"en"	"Console"
+		"ru"	"Консоль"
 	}
 	"CommType"
 	{
-		"en"		"Type:"
-		"ru"		"Тип наказания:"
+		"en"	"Type:"
+		"ru"	"Тип наказания:"
 	}
-	"Mute"
+	"Config have been reloaded."
 	{
-		"en"		"Mute."
-		"ru"		"Отключение микрофона."
+		"en"	"Config have been reloaded."
+		"ru"	"Конфиг перезагружен."
+	}
+	"Create HTTP request failed."
+	{
+		"en"	"Create HTTP request failed."
+		"ru"	"Не удалось создать HTTP запрос."
+	}
+	"Duration"
+	{
+		"en"	"Duration:"
+		"ru"	"Длительность:"
+	}
+	"Empty"
+	{
+		"en"	""
 	}
 	"Gag"
 	{
-		"en"		"Gag."
-		"ru"		"Отключение чата."
+		"en"	"Gag."
+		"ru"	"Отключение чата."
+	}
+	"HTTP request failed with code: %i.%s"
+	{
+		"#format"	"{1:i},{2:t}"
+		"en"	"HTTP request failed with code: {1}.{2}"
+		"ru"	"HTTP запрос провалился с кодом: {1}.{2}"
+	}
+	"Map"
+	{
+		"en"	"Map:"
+		"ru"	"Карта:"
+	}
+	"Mute"
+	{
+		"en"	"Mute."
+		"ru"	"Отключение микрофона."
+	}
+	"Reason"
+	{
+		"en"	"Reason:"
+		"ru"	"Причина:"
 	}
 	"Silence"
 	{
-		"en"		"Silence."
-		"ru"		"Отключение микрофона и чата."
+		"en"	"Silence."
+		"ru"	"Отключение микрофона и чата."
+	}
+	"Test message have been send."
+	{
+		"en"	"Test message have been send."
+		"ru"	"Тестовое сообщение отправлено."
+	}
+	"Time"
+	{
+		"en"	"Time:"
+		"ru"	"Время:"
+	}
+	"Unknown config parse error."
+	{
+		"en"	"Unknown config parse error."
+		"ru"	"Неизвестная ошибка разбора конфига."
+	}
+	"Unknown hook type."
+	{
+		"en"	"Unknown hook type."
+		"ru"	"Неизвестный тип."
+	}
+	"Usage: sm_discord_test"
+	{
+		"en"	"Usage: sm_discord_test \"Type\" \"Message\"."
+		"ru"	"Использование: sm_discord_test \"Тип\" \"Сообщение\"."
+	}
+	"Violator"
+	{
+		"en"	"Violator:"
+		"ru"	"Нарушитель:"
+	}
+	" Webhooks url can be incorrect."
+	{
+		"en"	" Webhooks url can be incorrect."
+		"ru"	" URL Вебхука может быть некорректным."
 	}
 }
