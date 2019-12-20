@@ -3,96 +3,116 @@
 	"Author Console"
 	{
 		"en"	"Console"
+		"pt"	"Console"
 		"ru"	"Консоль"
 	}
 	"CommType"
 	{
 		"en"	"Type:"
+		"pt"	"Tipo:"
 		"ru"	"Тип наказания:"
 	}
 	"Config have been reloaded."
 	{
 		"en"	"Config have been reloaded."
+		"pt"	"A configuração foi recarregada."
 		"ru"	"Конфиг перезагружен."
 	}
 	"Create HTTP request failed."
 	{
 		"en"	"Create HTTP request failed."
+		"pt"	"Falha ao criar solicitação HTTP."
 		"ru"	"Не удалось создать HTTP запрос."
 	}
 	"Duration"
 	{
 		"en"	"Duration:"
+		"pt"	"Duração:"
 		"ru"	"Длительность:"
 	}
 	"Empty"
 	{
 		"en"	""
+		"pt"	""
+		"ru"	""
 	}
 	"Gag"
 	{
 		"en"	"Gag."
+		"pt"	"Gag."
 		"ru"	"Отключение чата."
 	}
 	"HTTP request failed with code: %i.%s"
 	{
 		"#format"	"{1:i},{2:t}"
 		"en"	"HTTP request failed with code: {1}.{2}"
+		"pt"	"A solicitação HTTP falhou com o código: {1}.{2}"
 		"ru"	"HTTP запрос провалился с кодом: {1}.{2}"
 	}
 	"Map"
 	{
 		"en"	"Map:"
+		"pt"	"Mapa:"
 		"ru"	"Карта:"
 	}
 	"Mute"
 	{
 		"en"	"Mute."
+		"pt"	"Mute."
 		"ru"	"Отключение микрофона."
 	}
 	"Reason"
 	{
 		"en"	"Reason:"
+		"pt"	"Motivo:"
 		"ru"	"Причина:"
 	}
 	"Silence"
 	{
 		"en"	"Silence."
+		"pt"	"Silence."
 		"ru"	"Отключение микрофона и чата."
 	}
 	"Test message have been send."
 	{
 		"en"	"Test message have been send."
+		"pt"	"A mensagem de teste foi enviada."
 		"ru"	"Тестовое сообщение отправлено."
 	}
 	"Time"
 	{
 		"en"	"Time:"
+		"pt"	"Tempo:"
 		"ru"	"Время:"
 	}
 	"Unknown config parse error."
 	{
 		"en"	"Unknown config parse error."
+		"pt"	"Erro de análise de configuração desconhecido."
 		"ru"	"Неизвестная ошибка разбора конфига."
 	}
 	"Unknown hook type."
 	{
 		"en"	"Unknown hook type."
+		"pt"	"Tipo de gancho desconhecido."
 		"ru"	"Неизвестный тип."
 	}
 	"Usage: sm_discord_test"
 	{
 		"en"	"Usage: sm_discord_test \"Type\" \"Message\"."
+		"pt"	"Digite: sm_discord_test \"Tipo\" \"Message\"."
 		"ru"	"Использование: sm_discord_test \"Тип\" \"Сообщение\"."
 	}
 	"Violator"
 	{
 		"en"	"Violator:"
+		"pt"	"Infrator:"
 		"ru"	"Нарушитель:"
 	}
 	" Webhooks url can be incorrect."
 	{
 		"en"	" Webhooks url can be incorrect."
+		"pt"	" O URL dos Webhooks pode estar incorreto."
 		"ru"	" URL Вебхука может быть некорректным."
 	}
 }
