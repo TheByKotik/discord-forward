@@ -1,8 +1,8 @@
-Fork of [sbpp/discord-forward](https://github.com/sbpp/discord-forward)
-===
-1. Now not required [smjansson](https://github.com/thraaawn/SMJansson/).
-2. Supports translation.
-3. Easy hook management.
+# Fork of [sbpp/discord-forward](https://github.com/sbpp/discord-forward)
+
+1.  Now not required [smjansson](https://github.com/thraaawn/SMJansson/).
+2.  Supports translation.
+3.  Easy hook management.
 
 Required: [SteamWorks Extension](http://users.alliedmods.net/~kyles/builds/SteamWorks/) ([Source Code](https://github.com/KyleSanderson/SteamWorks))
 
