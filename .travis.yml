@@ -8,11 +8,13 @@ addons:
 matrix:
   fast_finish: true
   allow_failures:
-    - env: SOURCEMOD=1.10
+    - env: SOURCEMOD=1.9
+    - env: SOURCEMOD=1.11
 
 env:
   - SOURCEMOD=1.9
   - SOURCEMOD=1.10
+  - SOURCEMOD=1.11
 
 before_script:
   - wget "https://www.sourcemod.net/latest.php?version=$SOURCEMOD&os=linux" -O sourcemod-$SOURCEMOD-linux.tar.gz
