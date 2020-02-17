@@ -16,7 +16,7 @@
 	{
 		"en"	"Config have been reloaded."
 		"pt"	"A configuração foi recarregada."
-		"ru"	"Конфиг перезагружен."
+		"ru"	"Настройки перезагружены."
 	}
 	"Create HTTP request failed."
 	{
@@ -89,7 +89,7 @@
 	{
 		"en"	"Unknown config parse error."
 		"pt"	"Erro de análise de configuração desconhecido."
-		"ru"	"Неизвестная ошибка разбора конфига."
+		"ru"	"Неизвестная ошибка разбора настроек."
 	}
 	"Unknown hook type."
 	{
