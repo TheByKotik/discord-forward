@@ -7,7 +7,7 @@ public Plugin myinfo = {
 	name		= "SourceBans++ Discord",
 	author		= "Kotik. Fork of RumbleFrog, SourceBans++ Dev Team.",
 	description = "Listens forwards of bans, comms, reports and sends it to Discord webhooks.",
-	version		= "1.7.0-45",
+	version		= "1.7.0-46",
 	url			= "https://github.com/TheByKotik/sbpp_discord" };
 
 #undef REQUIRE_PLUGIN
@@ -110,7 +110,7 @@ public void SBPP_OnReportPlayer (int iReporter, int iTarget, const char[] szReas
 	SendEmbed( iReporter, iTarget, szReason, Type_Report );
 }
 #else
-	#warning "Compiled without SourceBans Natives."
+	#warning "Compiled without SourceBans natives."
 #endif
 
 #if defined _sourcecomms_included
@@ -119,7 +119,7 @@ public void SourceComms_OnBlockAdded (int iAdmin, int iTarget, int iTime, int iC
 	SendEmbed( iAdmin, iTarget, szReason, iCommType, iTime );
 }
 #else
-	#warning "Compiled without SourceComms Natives."
+	#warning "Compiled without SourceComms natives."
 #endif
 
 void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, const int iType, const int iTime = 0)
@@ -127,22 +127,22 @@ void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, co
 	if ( g_iSettings & g_iSettings_Reload_OnSend ) { Settings_Reload(); }
 	if ( g_iHook[iType] != Type_Unknown ) {
 		SetGlobalTransTarget( LANG_SERVER );
-		static char szJson[3072];
+		static char szJson[3038 + sizeof g_szHost-1 + sizeof g_szIP-1], szURL[128];
 		szJson = "payload_json={\"username\": \"SourceBans++\", \"avatar_url\": \"https://sbpp.github.io/img/favicons/android-chrome-512x512.png\", \"embeds\": [{\"color\": ";
 		int iFields, iLen = 143 + FormatEx( szJson[143], 10+24+1, "%i, \"author\": {\"name\": \"> ", g_iEmbedColors[iType] );
 		if ( IsValidClient( iAuthor ) ) {
-			GetClientName( iAuthor, szJson[iLen], 256-2 );
-			EscapeRequest( szJson[iLen], 256-2 );
+			GetClientName( iAuthor, szJson[iLen], 255-2+1 );
+			EscapeRequest( szJson[iLen], 255-2+1 );
 			iLen += strlen( szJson[iLen] );
 			iLen += strcopy( szJson[iLen], 47+1, "\", \"url\": \"https://steamcommunity.com/profiles/" );
 			GetClientAuthId( iAuthor, AuthId_SteamID64, szJson[iLen], 20+1 );
 			iLen += strlen( szJson[iLen] );
-			iLen += strcopy( szJson[iLen], 16+1, "\"}, \"fields\": [" ); }
-		else { iLen += FormatEx( szJson[iLen], sizeof szJson-iLen, "%t\"}, \"fields\": [", "Author Console" ); }
+			iLen += strcopy( szJson[iLen], 15+1, "\"}, \"fields\": [" ); }
+		else { iLen += FormatEx( szJson[iLen], 15+63+1, "%t\"}, \"fields\": [", "Author Console" ); }
 		if ( IsValidClient( iTarget ) ) {
-			iLen += FormatEx( szJson[iLen], 23+128+1, "{\"name\": \"%t\", \"value\": \"", "Violator" );
-			GetClientName( iTarget, szJson[iLen], 256-3-18-22 ); // 3 = ' []', 22 = SteamID2, 18 = SteamID3;
-			EscapeMarkdown( szJson[iLen], 256-3-18-22 );
+			iLen += FormatEx( szJson[iLen], 23+63+1, "{\"name\": \"%t\", \"value\": \"", "Violator" );
+			GetClientName( iTarget, szJson[iLen], 255-3-18-22+1 ); // 3 = ' []', 22 = SteamID2, 18 = SteamID3;
+			EscapeMarkdown( szJson[iLen], 255-3-18-22+1 );
 			szJson[ iLen += strlen( szJson[iLen] ) ] = ' ';
 			++iLen;
 			if ( g_iSettings & g_iSettings_SteamID3 && GetClientAuthId( iTarget, AuthId_Steam3, szJson[iLen], 18+1 ) ) { iLen += strlen( szJson[iLen] ); }
@@ -156,28 +156,28 @@ void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, co
 			++iFields; }
 		if ( szMessage[0] ) {
 			if ( iFields++ ) { szJson[ iLen++ ] = ','; }
-			iLen += FormatEx( szJson[iLen], 23+128+1, "{\"name\": \"%t\", \"value\": \"", "Reason" );
-			strcopy( szJson[iLen], 256, szMessage );
-			EscapeMarkdown( szJson[iLen], 256 );
+			iLen += FormatEx( szJson[iLen], 23+63+1, "{\"name\": \"%t\", \"value\": \"", "Reason" );
+			strcopy( szJson[iLen], 255+1, szMessage );
+			EscapeMarkdown( szJson[iLen], 255+1 );
 			szJson[ iLen += strlen( szJson[iLen] ) ] = '\"';
 			++iLen;
 			szJson[ iLen++ ] = '}'; }
 		if ( iType != Type_Report ) {
 			if ( iType > Type_Ban ) {
 				if ( iFields++ ) { szJson[ iLen++ ] = ','; }
-				iLen += FormatEx( szJson[iLen], 23+128+64+1, "{\"name\": \"%t\", \"value\": \"%t\"}", "CommType", iType == Type_Mute ? "Mute" : iType == Type_Gag ? "Gag" : "Silence" ); }
+				iLen += FormatEx( szJson[iLen], 23+63+63+2+1, "{\"name\": \"%t\", \"value\": \"%t\"}", "CommType", iType == Type_Mute ? "Mute" : iType == Type_Gag ? "Gag" : "Silence" ); }
 			if ( iFields++ ) { szJson[ iLen++ ] = ','; }
-			iLen += FormatEx( szJson[iLen], 23+128+64+1, "{\"name\": \"%t\", \"value\": \"%t\"}", "Duration", !iTime ? "ReasonPanel_Perm" : iTime == -1 ? "ReasonPanel_Temp" : "ReasonPanel_Time", iTime ); }
+			iLen += FormatEx( szJson[iLen], 23+63+63+2+1, "{\"name\": \"%t\", \"value\": \"%t\"}", "Duration", !iTime ? "ReasonPanel_Perm" : iTime == -1 ? "ReasonPanel_Temp" : "ReasonPanel_Time", iTime ); }
 		if ( g_iSettings & g_iSettings_Map_Path ) {
 			if ( iFields++ ) { szJson[ iLen++ ] = ','; }
-			iLen += FormatEx( szJson[iLen], 23+128+1, "{\"name\": \"%t\", \"value\": \"", "Map" );
-			GetCurrentMap( szJson[iLen], 256 );
+			iLen += FormatEx( szJson[iLen], 23+63+1, "{\"name\": \"%t\", \"value\": \"", "Map" );
+			GetCurrentMap( szJson[iLen], 255+1 );
 			szJson[ iLen += strlen( szJson[iLen] ) ] = '\"';
 			++iLen;
 			szJson[ iLen++ ] = '}'; }
 		if ( g_iSettings & g_iSettings_Section_Time ) {
 			if ( iFields++ ) { szJson[ iLen++ ] = ','; }
-			iLen += FormatEx( szJson[iLen], 23+128+1, "{\"name\": \"%t\", \"value\": \"", "Time" );
+			iLen += FormatEx( szJson[iLen], 23+63+1, "{\"name\": \"%t\", \"value\": \"", "Time" );
 			int iTimestamp = GetTime();
 			if ( g_iSettings & g_iSettings_Time_Date ) {
 				FormatTime( szJson[iLen], 20+1, "%Y.%m.%d, %H:%M:%S", iTimestamp );
@@ -186,23 +186,30 @@ void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, co
 			else { iLen += FormatEx( szJson[iLen], 10+1+1, "%i.", iTimestamp ); }
 			szJson[ iLen++ ] = '\"';
 			szJson[ iLen++ ] = '}'; }
-		if ( !iFields ) { iLen += FormatEx( szJson[iLen], 23+128+1, "{\"name\": \"(╯°□°）╯︵ ┻━┻\", \"value\": \"┬─┬ ノ( ゜-゜ノ)\"}" ); }
-		char szBuf[512];
+		iLen += strcopy( szJson[iLen], 22+1, "],\"thumbnail\":{\"url\":\"" );
 		if ( g_iHookIcon[iType] != Type_Unknown ) {
-			g_dpHookIcon[ g_iHookIcon[iType] ].ReadString( szBuf, sizeof szBuf );
-			g_dpHookIcon[ g_iHookIcon[iType] ].Reset(); }
-		iLen += FormatEx( szJson[iLen], sizeof szJson-iLen, "], \"thumbnail\": { \"url\": \"%s\" }, \"footer\": {\"text\": \"%s %s\", \"icon_url\": \"",
-			szBuf[0] ? szBuf : "https://sbpp.github.io/img/favicons/android-chrome-512x512.png",
-			g_szHost,
-			g_szIP );
+			g_dpHookIcon[ g_iHookIcon[iType] ].ReadString( szJson[iLen], 512 );
+			g_dpHookIcon[ g_iHookIcon[iType] ].Reset();
+			iLen += strlen( szJson[iLen] ); }
+		else { iLen += strcopy( szJson[iLen], 62+1, "https://sbpp.github.io/img/favicons/android-chrome-512x512.png" ); }
+		szJson[iLen++] = '"';
+		szJson[iLen++] = '}';
+		szJson[iLen++] = ',';
+		iLen += FormatEx( szJson[iLen], 33 + sizeof g_szHost-1 + sizeof g_szIP-1 + 1, "\"footer\":{\"text\":\"%s %s\",\"icon_url\":\"", g_szHost, g_szIP );
 		if ( g_dpServerIcon ) {
-			g_dpServerIcon.ReadString( szBuf, sizeof szBuf );
-			g_dpServerIcon.Reset(); }
-		else { szBuf[0] = '\0'; }
-		FormatEx( szJson[iLen], sizeof szJson-iLen, "%s\"}}]}", szBuf[0] ? szBuf : "https://sbpp.github.io/img/favicons/android-chrome-512x512.png" );
-		g_dpHook[ g_iHook[iType] ].ReadString( szBuf, sizeof szBuf );
+			g_dpServerIcon.ReadString( szJson[iLen], 512 );
+			g_dpServerIcon.Reset();
+			iLen += strlen( szJson[iLen] ); }
+		else { iLen += strcopy( szJson[iLen], 62+1, "https://sbpp.github.io/img/favicons/android-chrome-512x512.png" ); }
+		szJson[iLen++] = '"';
+		szJson[iLen++] = '}';
+		szJson[iLen++] = '}';
+		szJson[iLen++] = ']';
+		szJson[iLen++] = '}';
+		szJson[iLen] = '\0';
+		g_dpHook[ g_iHook[iType] ].ReadString( szURL, sizeof szURL );
 		g_dpHook[ g_iHook[iType] ].Reset();
-		System2HTTPRequest hReq = new System2HTTPRequest( SendEmbed_Callback, szBuf );
+		System2HTTPRequest hReq = new System2HTTPRequest( SendEmbed_Callback, szURL );
 		hReq.SetData( szJson );
 		hReq.POST();
 		CloseHandle( hReq ); }
@@ -275,26 +282,27 @@ SMCResult Settings_Parce_OnEnterSection (const SMCParser Parser, const char[] sz
 
 SMCResult Settings_Parse_Settings (const SMCParser Parser, const char[] szKey, const char[] szValue, const bool key_quotes, const bool value_quotes)
 {
-	#define SetFlags(%0,%1) (g_iSettings & ~%0 | StringToInt( szValue ) << %1 & %0)
-	if ( !strcmp( "Reload On", szKey ) ) {
-		g_iSettings = SetFlags( g_iSettings_Section_Reload, g_iSettings_Reload ); }
-	else if ( !strcmp( "SteamID Version", szKey ) ) {
-		g_iSettings = SetFlags( g_iSettings_Section_SteamID, g_iSettings_SteamID ); }
-	else if ( !strcmp( "Map", szKey ) ) {
-		g_iSettings = SetFlags( g_iSettings_Section_Map, g_iSettings_Map ); }
-	else if ( !strcmp( "Time", szKey ) ) {
-		g_iSettings = SetFlags( g_iSettings_Section_Time, g_iSettings_Time ); }
-	#undef SetFlags
-	else if ( !strcmp( "Server Icon URL", szKey ) ) {
-		g_dpServerIcon = new DataPack();
-		g_dpServerIcon.WriteString( szValue );
-		g_dpServerIcon.Reset(); }
+	if ( szValue[0] ) {
+		#define SetFlags(%0,%1) (g_iSettings & ~%0 | StringToInt( szValue ) << %1 & %0)
+		if ( !strcmp( "Reload On", szKey ) ) {
+			g_iSettings = SetFlags( g_iSettings_Section_Reload, g_iSettings_Reload ); }
+		else if ( !strcmp( "SteamID Version", szKey ) ) {
+			g_iSettings = SetFlags( g_iSettings_Section_SteamID, g_iSettings_SteamID ); }
+		else if ( !strcmp( "Map", szKey ) ) {
+			g_iSettings = SetFlags( g_iSettings_Section_Map, g_iSettings_Map ); }
+		else if ( !strcmp( "Time", szKey ) ) {
+			g_iSettings = SetFlags( g_iSettings_Section_Time, g_iSettings_Time ); }
+		#undef SetFlags
+		else if ( !strcmp( "Server Icon URL", szKey ) ) {
+			g_dpServerIcon = new DataPack();
+			g_dpServerIcon.WriteString( szValue );
+			g_dpServerIcon.Reset(); } }
 	return SMCParse_Continue;
 }
 
 SMCResult Settings_Parse_Hooks (const SMCParser Parser, const char[] szKey, const char[] szValue, const bool key_quotes, const bool value_quotes)
 {
-	if ( g_iType != Type_Unknown && szValue[0] ) {
+	if ( szValue[0] && g_iType != Type_Unknown ) {
 		if ( !strcmp( "Color", szKey ) ) {
 			g_iEmbedColors[g_iType] = StringToInt( szValue, 16 ); }
 		else if ( !strcmp( "Icon", szKey ) ) {
