@@ -7,7 +7,7 @@ public Plugin myinfo = {
 	name		= "SourceBans++ Discord",
 	author		= "Kotik. Fork of RumbleFrog, SourceBans++ Dev Team.",
 	description = "Listens forwards of bans, comms, reports and sends it to Discord webhooks.",
-	version		= "1.7.0-46",
+	version		= "1.7.0-47",
 	url			= "https://github.com/TheByKotik/sbpp_discord" };
 
 #undef REQUIRE_PLUGIN
@@ -24,19 +24,20 @@ enum /* Types. */ {
 	Type_Report,
 	Types };
 enum /* g_iSettings. */ {
-	g_iSettings_Reload = 0,
-		g_iSettings_Reload_OnConfigs = 1 << 0,
-		g_iSettings_Reload_OnSend	 = 1 << 1,
-	g_iSettings_SteamID = 2,
-		g_iSettings_SteamID3 = 1 << 2,
-		g_iSettings_SteamID2 = 1 << 3,
-	g_iSettings_Map = 4,
-		g_iSettings_Map_Path = 1 << 4,
-	g_iSettings_Time = 5,
-		g_iSettings_Time_Date = 1 << 5,
-		g_iSettings_Time_Timestamp = 1 << 6,
+	g_iSettings_Reload					= 0,
+		g_iSettings_Reload_OnConfigs		= 1 << 0,
+		g_iSettings_Reload_OnSend			= 1 << 1,
+	g_iSettings_SteamID					= 2,
+		g_iSettings_SteamID3				= 1 << 2,
+		g_iSettings_SteamID2				= 1 << 3,
+		g_iSettings_SteamID64				= 1 << 4,
+	g_iSettings_Map						= 5,
+		g_iSettings_Map_Path				= 1 << 5,
+	g_iSettings_Time					= 6,
+		g_iSettings_Time_Date				= 1 << 6,
+		g_iSettings_Time_Timestamp			= 1 << 7,
 	g_iSettings_Section_Reload	= g_iSettings_Reload_OnConfigs | g_iSettings_Reload_OnSend,
-	g_iSettings_Section_SteamID	= g_iSettings_SteamID3 | g_iSettings_SteamID2,
+	g_iSettings_Section_SteamID	= g_iSettings_SteamID3 | g_iSettings_SteamID2 | g_iSettings_SteamID64,
 	g_iSettings_Section_Map		= g_iSettings_Map_Path,
 	g_iSettings_Section_Time	= g_iSettings_Time_Date | g_iSettings_Time_Timestamp };
 int g_iSettings, g_iType, g_iHook[Types], g_iHookIcon[Types], g_iEmbedColors[Types];
@@ -141,16 +142,25 @@ void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, co
 		else { iLen += FormatEx( szJson[iLen], 15+63+1, "%t\"}, \"fields\": [", "Author Console" ); }
 		if ( IsValidClient( iTarget ) ) {
 			iLen += FormatEx( szJson[iLen], 23+63+1, "{\"name\": \"%t\", \"value\": \"", "Violator" );
-			GetClientName( iTarget, szJson[iLen], 255-3-18-22+1 ); // 3 = ' []', 22 = SteamID2, 18 = SteamID3;
-			EscapeMarkdown( szJson[iLen], 255-3-18-22+1 );
+			GetClientName( iTarget, szJson[iLen], 255-3-18-24-36-20+1 ); // 3 = ' []', 18 = SteamID3, 24 = SteamID2 + [], 36 = SteamURL, 20 = SteamID64;
+			EscapeMarkdown( szJson[iLen], 255-3-18-24-36-20+1 );
 			szJson[ iLen += strlen( szJson[iLen] ) ] = ' ';
 			++iLen;
+			if ( g_iSettings & g_iSettings_SteamID64 ) { szJson[iLen++] = '['; }
 			if ( g_iSettings & g_iSettings_SteamID3 && GetClientAuthId( iTarget, AuthId_Steam3, szJson[iLen], 18+1 ) ) { iLen += strlen( szJson[iLen] ); }
 			if ( g_iSettings & g_iSettings_SteamID2 ) {
 				szJson[iLen++] = '[';
 				GetClientAuthId( iTarget, AuthId_Steam2, szJson[iLen], 22+1 );
 				szJson[ iLen += strlen( szJson[iLen] ) ] = ']';
 				++iLen; }
+			if ( g_iSettings & g_iSettings_SteamID64 ) {
+				if ( szJson[iLen-1] == '[' ) { iLen += strcopy( szJson[iLen], 7+1, "[steam]" ); }
+				szJson[iLen++] = ']';
+				szJson[iLen++] = '(';
+				iLen += strcopy( szJson[iLen], 47+1, "https://steamcommunity.com/profiles/" );
+				GetClientAuthId( iAuthor, AuthId_SteamID64, szJson[iLen], 20+1 );
+				iLen += strlen( szJson[iLen] );
+				szJson[iLen++] = ')'; }
 			szJson[ iLen++ ] = '\"';
 			szJson[ iLen++ ] = '}';
 			++iFields; }
@@ -230,6 +240,10 @@ void EscapeMarkdown (char[] szStr, const int iSize)
 	ReplaceString( szStr, iSize, "#", "\\#" );
 	ReplaceString( szStr, iSize, "@", "\\@" );
 	ReplaceString( szStr, iSize, ">", "\\>" );
+	ReplaceString( szStr, iSize, "[", "\\[" );
+	ReplaceString( szStr, iSize, "]", "\\]" );
+	ReplaceString( szStr, iSize, "(", "\\(" );
+	ReplaceString( szStr, iSize, ")", "\\)" );
 	EscapeRequest( szStr, iSize );
 }
 
