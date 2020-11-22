@@ -26,9 +26,9 @@
 	}
 	"Duration"
 	{
-		"en"	"Duration:"
-		"pt"	"Duração:"
-		"ru"	"Длительность:"
+		"en"	"Duration"
+		"pt"	"Duração"
+		"ru"	"Длительность"
 	}
 	"Empty"
 	{
@@ -38,9 +38,9 @@
 	}
 	"Gag"
 	{
-		"en"	"Gag."
-		"pt"	"Gag."
-		"ru"	"Отключение чата."
+		"en"	"Gag"
+		"pt"	"Gag"
+		"ru"	"Отключение чата"
 	}
 	"HTTP request failed with code: %i.%s"
 	{
@@ -51,27 +51,27 @@
 	}
 	"Map"
 	{
-		"en"	"Map:"
-		"pt"	"Mapa:"
-		"ru"	"Карта:"
+		"en"	"Map"
+		"pt"	"Mapa"
+		"ru"	"Карта"
 	}
 	"Mute"
 	{
-		"en"	"Mute."
-		"pt"	"Mute."
-		"ru"	"Отключение микрофона."
+		"en"	"Mute"
+		"pt"	"Mute"
+		"ru"	"Отключение микрофона"
 	}
 	"Reason"
 	{
-		"en"	"Reason:"
-		"pt"	"Motivo:"
-		"ru"	"Причина:"
+		"en"	"Reason"
+		"pt"	"Motivo"
+		"ru"	"Причина"
 	}
 	"Silence"
 	{
-		"en"	"Silence."
-		"pt"	"Silence."
-		"ru"	"Отключение микрофона и чата."
+		"en"	"Silence"
+		"pt"	"Silence"
+		"ru"	"Отключение микрофона и чата"
 	}
 	"Test message have been send"
 	{
@@ -105,9 +105,9 @@
 	}
 	"Violator"
 	{
-		"en"	"Violator:"
-		"pt"	"Infrator:"
-		"ru"	"Нарушитель:"
+		"en"	"Violator"
+		"pt"	"Infrator"
+		"ru"	"Нарушитель"
 	}
 	"Webhooks url can be incorrect"
 	{
