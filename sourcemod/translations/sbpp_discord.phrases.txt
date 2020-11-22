@@ -12,7 +12,7 @@
 		"pt"	"Tipo:"
 		"ru"	"Тип наказания:"
 	}
-	"Config have been reloaded."
+	"Config have been reloaded"
 	{
 		"en"	"Config have been reloaded."
 		"pt"	"A configuração foi recarregada."
@@ -73,7 +73,7 @@
 		"pt"	"Silence."
 		"ru"	"Отключение микрофона и чата."
 	}
-	"Test message have been send."
+	"Test message have been send"
 	{
 		"en"	"Test message have been send."
 		"pt"	"A mensagem de teste foi enviada."
@@ -85,22 +85,22 @@
 		"pt"	"Tempo:"
 		"ru"	"Время:"
 	}
-	"Unknown config parse error."
+	"Unknown config parse error"
 	{
 		"en"	"Unknown config parse error."
 		"pt"	"Erro de análise de configuração desconhecido."
 		"ru"	"Неизвестная ошибка разбора настроек."
 	}
-	"Unknown hook type."
+	"Unknown hook type"
 	{
 		"en"	"Unknown hook type."
-		"pt"	"Tipo de gancho desconhecido."
+		"pt"	"Tipo de hook desconhecido."
 		"ru"	"Неизвестный тип."
 	}
 	"Usage: sm_discord_test"
 	{
 		"en"	"Usage: sm_discord_test \"Type\" \"Message\"."
-		"pt"	"Digite: sm_discord_test \"Tipo\" \"Message\"."
+		"pt"	"Uso: sm_discord_test \"Tipo\" \"Message\"."
 		"ru"	"Использование: sm_discord_test \"Тип\" \"Сообщение\"."
 	}
 	"Violator"
@@ -109,10 +109,10 @@
 		"pt"	"Infrator:"
 		"ru"	"Нарушитель:"
 	}
-	" Webhooks url can be incorrect."
+	"Webhooks url can be incorrect"
 	{
-		"en"	" Webhooks url can be incorrect."
-		"pt"	" O URL dos Webhooks pode estar incorreto."
-		"ru"	" URL Вебхука может быть некорректным."
+		"en"	"Webhooks url can be incorrect."
+		"pt"	"O URL dos Webhooks pode estar incorreto."
+		"ru"	"URL Вебхука может быть некорректным."
 	}
 }

@@ -5,9 +5,9 @@
 
 public Plugin myinfo = {
 	name		= "SourceBans++ Discord",
-	author		= "Kotik. Fork of RumbleFrog, SourceBans++ Dev Team.",
-	description = "Listens forwards of bans, comms, reports and sends it to Discord webhooks.",
-	version		= "1.7.0-47",
+	author		= "Kotik. Fork of RumbleFrog, SourceBans++ Dev Team",
+	description = "Listens forwards of bans, comms, reports and sends it to Discord webhooks",
+	version		= "1.7.0-48",
 	url			= "https://github.com/TheByKotik/sbpp_discord" };
 
 #undef REQUIRE_PLUGIN
@@ -87,8 +87,8 @@ Action sm_discord_test_Handler (const int iClient, int iArgs)
 		iArgs = StringToType( szBuf );
 		if ( iArgs != Type_Unknown ) {
 			SendEmbed( iClient, iClient, szMessage[0] ? szMessage : "(╯°□°）╯︵ ┻━┻", iArgs );
-			ReplyToCommand( iClient, "%t", "Test message have been send." ); }
-		else { ReplyToCommand( iClient, "%t", "Unknown hook type." ); } }
+			ReplyToCommand( iClient, "%t", "Test message have been send" ); }
+		else { ReplyToCommand( iClient, "%t", "Unknown hook type" ); } }
 	else { ReplyToCommand( iClient, "%t", "Usage: sm_discord_test" ); }
 	return Plugin_Handled;
 }
@@ -96,7 +96,7 @@ Action sm_discord_test_Handler (const int iClient, int iArgs)
 Action sm_discord_reload_Handler (const int iClient, const int iArgs)
 {
 	Settings_Reload();
-	ReplyToCommand( iClient, "%t", "Config have been reloaded." );
+	ReplyToCommand( iClient, "%t", "Config have been reloaded" );
 	return Plugin_Handled;
 }
 
@@ -227,7 +227,7 @@ void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, co
 
 void SendEmbed_Callback (const bool bSuccess, const char[] szError, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method)
 {
-	if ( !bSuccess || szError[0] || response.StatusCode != 204 ) { LogError( "%t", "HTTP request failed with code: %i.%s", response.StatusCode, (response.StatusCode == 0 || response.StatusCode == 200) ? " Webhooks url can be incorrect." : "Empty" ); }
+	if ( !bSuccess || szError[0] || response.StatusCode != 204 ) { LogError( "%t", "HTTP request failed with code: %i.%s", response.StatusCode, (response.StatusCode == 0 || response.StatusCode == 200) ? "Webhooks url can be incorrect" : "Empty" ); }
 }
 
 void EscapeMarkdown (char[] szStr, const int iSize)
@@ -274,10 +274,10 @@ void Settings_Reload ()
 	SMCParser Parser = new SMCParser();
 	Parser.OnEnterSection = Settings_Parce_OnEnterSection;
 	char szBuf[PLATFORM_MAX_PATH];
-	BuildPath( Path_SM, szBuf, sizeof szBuf, "configs/sbpp/discord.cfg" );
+	BuildPath( Path_SM, szBuf, sizeof szBuf, "configs/sourcebans/sb_discord.cfg" );
 	if ( FileExists( szBuf ) ) {
 		SMCError Status = Parser.ParseFile( szBuf );
-		if ( Status != SMCError_Okay ) { LogError( Parser.GetErrorString( Status, szBuf, sizeof szBuf ) ? szBuf : "%t", "Unknown config parse error." ); } }
+		if ( Status != SMCError_Okay ) { LogError( Parser.GetErrorString( Status, szBuf, sizeof szBuf ) ? szBuf : "%t", "Unknown config parse error" ); } }
 	for ( i = 0; i < Types; ++i ) {
 		Resolve( g_iHook, i );
 		Resolve( g_iHookIcon, i ); }
