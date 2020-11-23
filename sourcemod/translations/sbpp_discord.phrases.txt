@@ -8,9 +8,9 @@
 	}
 	"CommType"
 	{
-		"en"	"Type:"
-		"pt"	"Tipo:"
-		"ru"	"Тип наказания:"
+		"en"	"Type"
+		"pt"	"Tipo"
+		"ru"	"Тип наказания"
 	}
 	"Config have been reloaded"
 	{
@@ -81,9 +81,9 @@
 	}
 	"Time"
 	{
-		"en"	"Time:"
-		"pt"	"Tempo:"
-		"ru"	"Время:"
+		"en"	"Time"
+		"pt"	"Tempo"
+		"ru"	"Время"
 	}
 	"Unknown config parse error"
 	{
