@@ -190,7 +190,7 @@ void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, co
 			iLen += FormatEx( szJson[iLen], 23+63+1, "{\"name\": \"%t\", \"value\": \"", "Time" );
 			int iTimestamp = GetTime();
 			if ( g_iSettings & g_iSettings_Time_Date ) {
-				FormatTime( szJson[iLen], 20+1, "%Y.%m.%d, %H:%M:%S", iTimestamp );
+				FormatTime( szJson[iLen], 20+1, "%d.%m.%Y | %H:%M:%S", iTimestamp );
 				if ( (iLen += 20), g_iSettings & g_iSettings_Time_Timestamp ) { iLen += FormatEx( szJson[iLen], 6+10+1, " ... %i.", iTimestamp ); }
 				else { szJson[ iLen++ ] = '.'; } }
 			else { iLen += FormatEx( szJson[iLen], 10+1+1, "%i.", iTimestamp ); }
