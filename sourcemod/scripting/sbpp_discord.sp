@@ -7,7 +7,7 @@ public Plugin myinfo = {
 	name		= "SourceBans++ Discord",
 	author		= "Kotik. Fork of RumbleFrog, SourceBans++ Dev Team.",
 	description = "Listens forwards of bans, comms, reports and sends it to Discord webhooks.",
-	version		= "1.7.0-47",
+	version		= "1.7.0-48",
 	url			= "https://github.com/TheByKotik/sbpp_discord" };
 
 #undef REQUIRE_PLUGIN
@@ -40,9 +40,10 @@ enum /* g_iSettings. */ {
 	g_iSettings_Section_SteamID	= g_iSettings_SteamID3 | g_iSettings_SteamID2 | g_iSettings_SteamID64,
 	g_iSettings_Section_Map		= g_iSettings_Map_Path,
 	g_iSettings_Section_Time	= g_iSettings_Time_Date | g_iSettings_Time_Timestamp };
-int g_iSettings, g_iType, g_iHook[Types], g_iHookIcon[Types], g_iEmbedColors[Types];
-DataPack g_dpServerIcon, g_dpHook[Types], g_dpHookIcon[Types];
+int g_iSettings, g_iType, g_iEmbedColors[Types];
 char g_szHost[128], g_szIP[24] = "(";
+DataPack g_dpWebhookIcon[Types], g_dpServerIcon;
+System2HTTPRequest g_hWebhook[Types];
 
 #define IsValidClient(%0) (%0 > 0 && %0 <= MaxClients && IsClientInGame( %0 ))
 
@@ -126,10 +127,9 @@ public void SourceComms_OnBlockAdded (int iAdmin, int iTarget, int iTime, int iC
 void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, const int iType, const int iTime = 0)
 {
 	if ( g_iSettings & g_iSettings_Reload_OnSend ) { Settings_Reload(); }
-	if ( g_iHook[iType] != Type_Unknown ) {
+	if ( g_hWebhook[ iType ] ) {
 		SetGlobalTransTarget( LANG_SERVER );
-		static char szJson[3038 + sizeof g_szHost-1 + sizeof g_szIP-1], szURL[128];
-		szJson = "payload_json={\"username\": \"SourceBans++\", \"avatar_url\": \"https://sbpp.github.io/img/favicons/android-chrome-512x512.png\", \"embeds\": [{\"color\": ";
+		static char szJson[3038 + sizeof g_szHost-1 + sizeof g_szIP-1] = "payload_json={\"username\": \"SourceBans++\", \"avatar_url\": \"https://sbpp.github.io/img/favicons/android-chrome-512x512.png\", \"embeds\": [{\"color\": ";
 		int iFields, iLen = 143 + FormatEx( szJson[143], 10+24+1, "%i, \"author\": {\"name\": \"> ", g_iEmbedColors[iType] );
 		if ( IsValidClient( iAuthor ) ) {
 			GetClientName( iAuthor, szJson[iLen], 255-2+1 );
@@ -158,7 +158,7 @@ void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, co
 				szJson[iLen++] = ']';
 				szJson[iLen++] = '(';
 				iLen += strcopy( szJson[iLen], 47+1, "https://steamcommunity.com/profiles/" );
-				GetClientAuthId( iAuthor, AuthId_SteamID64, szJson[iLen], 20+1 );
+				GetClientAuthId( iTarget, AuthId_SteamID64, szJson[iLen], 20+1 );
 				iLen += strlen( szJson[iLen] );
 				szJson[iLen++] = ')'; }
 			szJson[ iLen++ ] = '\"';
@@ -197,32 +197,28 @@ void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, co
 			szJson[ iLen++ ] = '\"';
 			szJson[ iLen++ ] = '}'; }
 		iLen += strcopy( szJson[iLen], 22+1, "],\"thumbnail\":{\"url\":\"" );
-		if ( g_iHookIcon[iType] != Type_Unknown ) {
-			g_dpHookIcon[ g_iHookIcon[iType] ].ReadString( szJson[iLen], 512 );
-			g_dpHookIcon[ g_iHookIcon[iType] ].Reset();
-			iLen += strlen( szJson[iLen] ); }
-		else { iLen += strcopy( szJson[iLen], 62+1, "https://sbpp.github.io/img/favicons/android-chrome-512x512.png" ); }
-		szJson[iLen++] = '"';
-		szJson[iLen++] = '}';
-		szJson[iLen++] = ',';
+		if ( g_dpWebhookIcon[ iType ] ) {
+			g_dpWebhookIcon[ iType ].ReadString( szJson[iLen], 512 );
+			g_dpWebhookIcon[ iType ].Reset();
+			iLen += strlen( szJson[iLen] );
+			szJson[iLen++] = '"';
+			szJson[iLen++] = '}';
+			szJson[iLen++] = ','; }
+		else { iLen += strcopy( szJson[iLen], 62+3+1, "https://sbpp.github.io/img/favicons/android-chrome-512x512.png" ... "\"}," ); }
 		iLen += FormatEx( szJson[iLen], 33 + sizeof g_szHost-1 + sizeof g_szIP-1 + 1, "\"footer\":{\"text\":\"%s %s\",\"icon_url\":\"", g_szHost, g_szIP );
 		if ( g_dpServerIcon ) {
 			g_dpServerIcon.ReadString( szJson[iLen], 512 );
 			g_dpServerIcon.Reset();
-			iLen += strlen( szJson[iLen] ); }
-		else { iLen += strcopy( szJson[iLen], 62+1, "https://sbpp.github.io/img/favicons/android-chrome-512x512.png" ); }
-		szJson[iLen++] = '"';
-		szJson[iLen++] = '}';
-		szJson[iLen++] = '}';
-		szJson[iLen++] = ']';
-		szJson[iLen++] = '}';
-		szJson[iLen] = '\0';
-		g_dpHook[ g_iHook[iType] ].ReadString( szURL, sizeof szURL );
-		g_dpHook[ g_iHook[iType] ].Reset();
-		System2HTTPRequest hReq = new System2HTTPRequest( SendEmbed_Callback, szURL );
-		hReq.SetData( szJson );
-		hReq.POST();
-		CloseHandle( hReq ); }
+			iLen += strlen( szJson[iLen] );
+			szJson[iLen++] = '"';
+			szJson[iLen++] = '}';
+			szJson[iLen++] = '}';
+			szJson[iLen++] = ']';
+			szJson[iLen++] = '}';
+			szJson[iLen] = '\0'; }
+		else { iLen += strcopy( szJson[iLen], 62+5+1, "https://sbpp.github.io/img/favicons/android-chrome-512x512.png" ... "\"}}]}" ); }
+		g_hWebhook[ iType ].SetData( szJson );
+		g_hWebhook[ iType ].POST(); }
 }
 
 void SendEmbed_Callback (const bool bSuccess, const char[] szError, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method)
@@ -264,10 +260,8 @@ void Settings_Reload ()
 	CloseHandle( hReq );
 	int i;
 	for ( ; i < Types; ++i ) {
-		g_iHook[i] = Type_Unknown;
-		g_iHookIcon[i] = Type_Unknown;
-		delete g_dpHook[i];
-		delete g_dpHookIcon[i]; }
+		delete g_hWebhook[i];
+		delete g_dpWebhookIcon[i]; }
 	delete g_dpServerIcon;
 	g_iSettings = g_iSettings_SteamID3;
 	g_iEmbedColors = { 0xDA1D87, 0x4362FA, 0x4362FA, 0x4362FA, 0xF9D942 };
@@ -279,8 +273,8 @@ void Settings_Reload ()
 		SMCError Status = Parser.ParseFile( szBuf );
 		if ( Status != SMCError_Okay ) { LogError( Parser.GetErrorString( Status, szBuf, sizeof szBuf ) ? szBuf : "%t", "Unknown config parse error." ); } }
 	for ( i = 0; i < Types; ++i ) {
-		Resolve( g_iHook, i );
-		Resolve( g_iHookIcon, i ); }
+		Resolve( g_hWebhook, i );
+		Resolve( g_dpWebhookIcon, i ); }
 }
 
 SMCResult Settings_Parce_OnEnterSection (const SMCParser Parser, const char[] szSection, const bool opt_quotes)
@@ -322,30 +316,28 @@ SMCResult Settings_Parse_Hooks (const SMCParser Parser, const char[] szKey, cons
 		else if ( !strcmp( "Icon", szKey ) ) {
 			int iRedir = StringToType( szValue );
 			if ( iRedir == Type_Unknown ) {
-				g_dpHookIcon[g_iType] = new DataPack();
-				g_dpHookIcon[g_iType].WriteString( szValue );
-				g_dpHookIcon[g_iType].Reset();
-				g_iHookIcon[g_iType] = g_iType; }
-			else { g_iHookIcon[g_iType] = iRedir; } }
+				g_dpWebhookIcon[ g_iType ] = new DataPack();
+				g_dpWebhookIcon[ g_iType ].WriteString( szValue );
+				g_dpWebhookIcon[ g_iType ].Reset(); }
+			else {
+				g_dpWebhookIcon[ g_iType ] = view_as<DataPack>( iRedir + 1 ); } }
 		else if ( !strcmp( "Webhook", szKey ) ) {
 			int iRedir = StringToType( szValue );
 			if ( iRedir == Type_Unknown ) {
-				g_dpHook[g_iType] = new DataPack();
-				g_dpHook[g_iType].WriteString( szValue );
-				g_dpHook[g_iType].Reset();
-				g_iHook[g_iType] = g_iType; }
-			else { g_iHook[g_iType] = iRedir; } } }
+				g_hWebhook[ g_iType ] = new System2HTTPRequest( SendEmbed_Callback, szValue ); }
+			else {
+				g_hWebhook[ g_iType ] = view_as<System2HTTPRequest>( iRedir + 1 ); } } }
 	return SMCParse_Continue;
 }
 
-void Resolve (int[] iRedir, const int iType, int it = 0)
+void Resolve (Handle[] hRedir, const int iType, const int it = 0)
 {
 	if ( it < Types ) {
-		int i = iRedir[iType];
-		if ( i != Type_Unknown ) {
-			if ( iRedir[i] != i ) { Resolve( iRedir, i, ++it ); }
-			iRedir[iType] = iRedir[i]; } }
-	else { iRedir[iType] = Type_Unknown; }
+		int i = view_as<int>( hRedir[ iType ] ) - 1;
+		if ( i != Type_Unknown && i < Types ) {
+			Resolve( hRedir, i, it + 1 );
+			hRedir[ iType ] = view_as<int>( hRedir[i] ) > Types ? CloneHandle( hRedir[ i ] ) : INVALID_HANDLE; } }
+	else { hRedir[ iType ] = INVALID_HANDLE; }
 }
 
 int StringToType (const char[] szStr)
