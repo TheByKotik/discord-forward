@@ -42,7 +42,7 @@
 		"pt"	"Gag."
 		"ru"	"Отключение чата."
 	}
-	"HTTP request failed with code: %i.%s"
+	"HTTP request failed with code: %i.%t"
 	{
 		"#format"	"{1:i},{2:t}"
 		"en"	"HTTP request failed with code: {1}.{2}"

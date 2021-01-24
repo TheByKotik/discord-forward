@@ -7,7 +7,7 @@ public Plugin myinfo = {
 	name		= "SourceBans++ Discord",
 	author		= "Kotik. Fork of RumbleFrog, SourceBans++ Dev Team.",
 	description = "Listens forwards of bans, comms, reports and sends it to Discord webhooks.",
-	version		= "1.7.0-48",
+	version		= "1.7.0-49",
 	url			= "https://github.com/TheByKotik/sbpp_discord" };
 
 #undef REQUIRE_PLUGIN
@@ -223,7 +223,8 @@ void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, co
 
 void SendEmbed_Callback (const bool bSuccess, const char[] szError, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method)
 {
-	if ( !bSuccess || szError[0] || response.StatusCode != 204 ) { LogError( "%t", "HTTP request failed with code: %i.%s", response.StatusCode, (response.StatusCode == 0 || response.StatusCode == 200) ? " Webhooks url can be incorrect." : "Empty" ); }
+	if ( bSuccess && response ) {
+		if ( response.StatusCode != 204 ) { LogError( "%t", "HTTP request failed with code: %i.%t", response.StatusCode, (response.StatusCode == 0 || response.StatusCode == 200) ? " Webhooks url can be incorrect." : "Empty" ); }}
 }
 
 void EscapeMarkdown (char[] szStr, const int iSize)
@@ -333,9 +334,9 @@ SMCResult Settings_Parse_Hooks (const SMCParser Parser, const char[] szKey, cons
 void Resolve (Handle[] hRedir, const int iType, const int it = 0)
 {
 	if ( it < Types ) {
-		int i = view_as<int>( hRedir[ iType ] ) - 1;
-		if ( i != Type_Unknown && i < Types ) {
-			Resolve( hRedir, i, it + 1 );
+		int i = view_as<int>( hRedir[ iType ] );
+		if ( i > Type_Unknown + 1 && i < Types + 1 ) {
+			Resolve( hRedir, --i, it + 1 );
 			hRedir[ iType ] = view_as<int>( hRedir[i] ) > Types ? CloneHandle( hRedir[ i ] ) : INVALID_HANDLE; } }
 	else { hRedir[ iType ] = INVALID_HANDLE; }
 }
