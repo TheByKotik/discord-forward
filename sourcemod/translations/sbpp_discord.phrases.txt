@@ -38,15 +38,15 @@
 	}
 	"Gag"
 	{
-		"en"	"Gag."
-		"pt"	"Gag."
-		"ru"	"Отключение чата."
+		"en"	"Gag"
+		"pt"	"Gag"
+		"ru"	"Отключение чата"
 	}
 	"HTTP request failed with code: %i.%t"
 	{
 		"#format"	"{1:i},{2:t}"
 		"en"	"HTTP request failed with code: {1}.{2}"
-		"pt"	"A solicitação HTTP falhou com o código: {1}.{2}"
+		"pt"	"Solicitação HTTP falhou com o código: {1}.{2}"
 		"ru"	"HTTP запрос провалился с кодом: {1}.{2}"
 	}
 	"Map"
@@ -57,9 +57,9 @@
 	}
 	"Mute"
 	{
-		"en"	"Mute."
-		"pt"	"Mute."
-		"ru"	"Отключение микрофона."
+		"en"	"Mute"
+		"pt"	"Mute"
+		"ru"	"Отключение микрофона"
 	}
 	"Reason"
 	{
@@ -69,9 +69,9 @@
 	}
 	"Silence"
 	{
-		"en"	"Silence."
-		"pt"	"Silence."
-		"ru"	"Отключение микрофона и чата."
+		"en"	"Silence"
+		"pt"	"Silence"
+		"ru"	"Отключение микрофона и чата"
 	}
 	"Test message have been send."
 	{
@@ -94,7 +94,7 @@
 	"Unknown hook type."
 	{
 		"en"	"Unknown hook type."
-		"pt"	"Tipo de gancho desconhecido."
+		"pt"	"Tipo de hook desconhecido."
 		"ru"	"Неизвестный тип."
 	}
 	"Usage: sm_discord_test"
@@ -112,7 +112,7 @@
 	" Webhooks url can be incorrect."
 	{
 		"en"	" Webhooks url can be incorrect."
-		"pt"	" O URL dos Webhooks pode estar incorreto."
+		"pt"	" URL dos webhooks pode estar incorreto."
 		"ru"	" URL Вебхука может быть некорректным."
 	}
 }
