@@ -1,77 +1,56 @@
 "Phrases"
 {
-	"Author Console"
+	""
+	{
+		"en"	""
+	}
+	"Blocked by:"
+	{
+		"en"	"Blocked by:"
+		"ru"	"Заблокирован:"
+	}
+	"Console"
 	{
 		"en"	"Console"
 		"pt"	"Console"
 		"ru"	"Консоль"
 	}
-	"CommType"
+	"Config file '%s' not found."
 	{
-		"en"	"Type:"
-		"pt"	"Tipo:"
-		"ru"	"Тип наказания:"
-	}
-	"Config have been reloaded."
-	{
-		"en"	"Config have been reloaded."
-		"pt"	"A configuração foi recarregada."
-		"ru"	"Настройки перезагружены."
-	}
-	"Create HTTP request failed."
-	{
-		"en"	"Create HTTP request failed."
-		"pt"	"Falha ao criar solicitação HTTP."
-		"ru"	"Не удалось создать HTTP запрос."
+		"#format"	"{1:s}"
+		"en"	"Config file '{1}' not found."
+		"ru"	"Файл настроек '{1}' не найден."
 	}
 	"Duration"
 	{
+		"en"	"Duration"
+		"pt"	"Duração"
+		"ru"	"Срок"
+	}
+	"Duration:"
+	{
 		"en"	"Duration:"
 		"pt"	"Duração:"
-		"ru"	"Длительность:"
+		"ru"	"Срок:"
 	}
-	"Empty"
+	"HTTP request failed with code: %u.%t"
 	{
-		"en"	""
-		"pt"	""
-		"ru"	""
-	}
-	"Gag"
-	{
-		"en"	"Gag."
-		"pt"	"Gag."
-		"ru"	"Отключение чата."
-	}
-	"HTTP request failed with code: %i.%t"
-	{
-		"#format"	"{1:i},{2:t}"
+		"#format"	"{1:u},{2:t}"
 		"en"	"HTTP request failed with code: {1}.{2}"
 		"pt"	"A solicitação HTTP falhou com o código: {1}.{2}"
 		"ru"	"HTTP запрос провалился с кодом: {1}.{2}"
 	}
-	"Map"
+	"Map:"
 	{
 		"en"	"Map:"
 		"pt"	"Mapa:"
 		"ru"	"Карта:"
 	}
-	"Mute"
-	{
-		"en"	"Mute."
-		"pt"	"Mute."
-		"ru"	"Отключение микрофона."
-	}
-	"Reason"
+	"Reason:"
 	{
 		"en"	"Reason:"
 		"pt"	"Motivo:"
 		"ru"	"Причина:"
-	}
-	"Silence"
-	{
-		"en"	"Silence."
-		"pt"	"Silence."
-		"ru"	"Отключение микрофона и чата."
 	}
 	"Test message have been send."
 	{
@@ -79,40 +58,199 @@
 		"pt"	"A mensagem de teste foi enviada."
 		"ru"	"Тестовое сообщение отправлено."
 	}
-	"Time"
-	{
-		"en"	"Time:"
-		"pt"	"Tempo:"
-		"ru"	"Время:"
-	}
 	"Unknown config parse error."
 	{
 		"en"	"Unknown config parse error."
 		"pt"	"Erro de análise de configuração desconhecido."
-		"ru"	"Неизвестная ошибка разбора настроек."
+		"ru"	"Неизвестная ошибка чтения настроек."
 	}
-	"Unknown hook type."
+	"Unknown webhook."
 	{
-		"en"	"Unknown hook type."
+		"en"	"Unknown webhook."
 		"pt"	"Tipo de gancho desconhecido."
-		"ru"	"Неизвестный тип."
+		"ru"	"Неизвестный вебхук."
 	}
-	"Usage: sm_discord_test"
+	"Syntax"
 	{
-		"en"	"Usage: sm_discord_test \"Type\" \"Message\"."
-		"pt"	"Digite: sm_discord_test \"Tipo\" \"Message\"."
-		"ru"	"Использование: sm_discord_test \"Тип\" \"Сообщение\"."
+		"en"	"Syntax"
+		"ru"	"Синтаксис"
 	}
-	"Violator"
+	"Message:"
+	{
+		"en"	"Message:"
+		"pt"	"Message:"
+		"ru"	"Сообщение:"
+	}
+	"Name_of_webhook"
+	{
+		"en"	"Name_of_webhook"
+		"ru"	"Название_вебхука"
+	}
+	"Violator:"
 	{
 		"en"	"Violator:"
 		"pt"	"Infrator:"
 		"ru"	"Нарушитель:"
 	}
-	" Webhooks url can be incorrect."
+	" Webhook url can be incorrect."
 	{
-		"en"	" Webhooks url can be incorrect."
-		"pt"	" O URL dos Webhooks pode estar incorreto."
-		"ru"	" URL Вебхука может быть некорректным."
+		"en"	" Webhook url can be incorrect."
+		"pt"	" O URL dos webhook pode estar incorreto."
+		"ru"	" URL вебхука может быть некорректным."
+	}
+	"Bans"
+	{
+		"en"	"Bans"
+		"ru"	"Баны"
+	}
+	"Mutes"
+	{
+		"en"	"Mutes"
+		"ru"	"Муты"
+	}
+	"Gags"
+	{
+		"en"	"Gags"
+		"ru"	"Гаги"
+	}
+	"Silences"
+	{
+		"en"	"Silences"
+		"ru"	"Сайленсы"
+	}
+	"Reports"
+	{
+		"en"	"Reports"
+		"ru"	"Жалобы"
+	}
+	"Permanent."
+	{
+		"en"	"Permanent."
+		"ru"	"Бессрочно."
+	}
+	"Session."
+	{
+		"en"	"Session."
+		"ru"	"Сессия."
+	}
+	"Years {N == 1}"
+	{
+		"en"	"year"
+		"ru"	"год"
+	}
+	"Years {N % 10 == 1 && N % 100 != 11}"
+	{
+		"en"	"years"
+		"ru"	"год"
+	}
+	"Years {N % 10 > 1 && N % 10 < 5}"
+	{
+		"en"	"years"
+		"ru"	"года"
+	}
+	"Years {N % 10 > 5 || N % 100 == 11}"
+	{
+		"en"	"years"
+		"ru"	"лет"
+	}
+	"Months {N == 1}"
+	{
+		"en"	"month"
+		"ru"	"месяц"
+	}
+	"Months {N % 10 == 1 && N % 100 != 11}"
+	{
+		"en"	"months"
+		"ru"	"месяц"
+	}
+	"Months {N % 10 > 1 && N % 10 < 5}"
+	{
+		"en"	"months"
+		"ru"	"месяца"
+	}
+	"Months {N % 10 > 5 || N % 100 == 11}"
+	{
+		"en"	"months"
+		"ru"	"месяцев"
+	}
+	"Weeks {N == 1}"
+	{
+		"en"	"week"
+		"ru"	"неделя"
+	}
+	"Weeks {N % 10 == 1 && N % 100 != 11}"
+	{
+		"en"	"weeks"
+		"ru"	"неделя"
+	}
+	"Weeks {N % 10 > 1 && N % 10 < 5}"
+	{
+		"en"	"weeks"
+		"ru"	"недели"
+	}
+	"Weeks {N % 10 > 5 || N % 100 == 11}"
+	{
+		"en"	"weeks"
+		"ru"	"недель"
+	}
+	"Days {N == 1}"
+	{
+		"en"	"day"
+		"ru"	"день"
+	}
+	"Days {N % 10 == 1 && N % 100 != 11}"
+	{
+		"en"	"days"
+		"ru"	"день"
+	}
+	"Days {N % 10 > 1 && N % 10 < 5}"
+	{
+		"en"	"days"
+		"ru"	"дня"
+	}
+	"Days {N % 10 > 5 || N % 100 == 11}"
+	{
+		"en"	"days"
+		"ru"	"дней"
+	}
+	"Hours {N == 1}"
+	{
+		"en"	"hour"
+		"ru"	"час"
+	}
+	"Hours {N % 10 == 1 && N % 100 != 11}"
+	{
+		"en"	"hours"
+		"ru"	"час"
+	}
+	"Hours {N % 10 > 1 && N % 10 < 5}"
+	{
+		"en"	"hours"
+		"ru"	"часа"
+	}
+	"Hours {N % 10 > 5 || N % 100 == 11}"
+	{
+		"en"	"hours"
+		"ru"	"часов"
+	}
+	"Minutes {N == 1}"
+	{
+		"en"	"minute"
+		"ru"	"минута"
+	}
+	"Minutes {N % 10 == 1 && N % 100 != 11}"
+	{
+		"en"	"minutes"
+		"ru"	"минута"
+	}
+	"Minutes {N % 10 > 1 && N % 10 < 5}"
+	{
+		"en"	"minutes"
+		"ru"	"минуты"
+	}
+	"Minutes {N % 10 > 5 || N % 100 == 11}"
+	{
+		"en"	"minutes"
+		"ru"	"минут"
 	}
 }

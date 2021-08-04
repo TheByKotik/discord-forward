@@ -1,0 +1,40 @@
+name: Build
+on:
+  push:
+    paths:
+      - '.github/workflows/build.yml'
+      - 'sourcemod/scripting/**'
+  pull_request:
+    paths:
+      - '.github/workflows/build.yml'
+      - 'sourcemod/scripting/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix:
+        sm-version: [ '1.10.x' ]
+        experimental: [ false ]
+        include:
+          - sm-version: '1.11.x'
+            experimental: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download natives
+        run: |
+          cd sourcemod/scripting
+          mkdir -p include/system2
+          wget https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/game/addons/sourcemod/scripting/include/sourcebanspp.inc -O include/sourcebanspp.inc
+          wget https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/game/addons/sourcemod/scripting/include/sourcecomms.inc -O include/sourcecomms.inc
+          wget https://raw.githubusercontent.com/dordnung/System2/master/sourcemod/scripting/include/system2.inc -O include/system2.inc
+          wget https://raw.githubusercontent.com/dordnung/System2/master/sourcemod/scripting/include/system2/request.inc -O include/system2/request.inc
+          wget https://raw.githubusercontent.com/dordnung/System2/master/sourcemod/scripting/include/system2/legacy.inc -O include/system2/legacy.inc
+      - name: Setup SourcePawn compiler
+        uses: rumblefrog/setup-sp@master
+        with:
+          version: ${{ matrix.sm-version }}
+      - name: Compile
+        run: spcomp sourcemod/scripting/sbpp_discord.sp -isourcemod/scripting -isourcemod/scripting/include -E -v0

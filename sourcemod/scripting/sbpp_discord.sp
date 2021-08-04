@@ -1,21 +1,19 @@
-#include <system2>
-
 #pragma newdecls required
 #pragma semicolon 1
 
 public Plugin myinfo = {
-	name		= "SourceBans++ Discord",
-	author		= "Kotik. Fork of RumbleFrog, SourceBans++ Dev Team.",
-	description = "Listens forwards of bans, comms, reports and sends it to Discord webhooks.",
-	version		= "1.7.0-49",
-	url			= "https://github.com/TheByKotik/sbpp_discord" };
+	name        = "SourceBans++ Discord",
+	author      = "Kotik. Fork of RumbleFrog, SourceBans++ Dev Team.",
+	description = "Sends notifications to Discord about bans, comms and reports.",
+	version     = "1.7.0-50",
+	url         = "https://github.com/TheByKotik/sbpp_discord" };
 
+#include <system2>
 #undef REQUIRE_PLUGIN
 	#tryinclude <sourcebanspp>
 	#tryinclude <sourcecomms>
-#define REQUIRE_PLUGIN
 
-enum /* Types. */ {
+enum /* Types */ {
 	Type_Unknown = -1,
 	Type_Ban,
 	Type_Mute,
@@ -23,88 +21,70 @@ enum /* Types. */ {
 	Type_Silence,
 	Type_Report,
 	Types };
-enum /* g_iSettings. */ {
-	g_iSettings_Reload					= 0,
-		g_iSettings_Reload_OnConfigs		= 1 << 0,
-		g_iSettings_Reload_OnSend			= 1 << 1,
-	g_iSettings_SteamID					= 2,
-		g_iSettings_SteamID3				= 1 << 2,
-		g_iSettings_SteamID2				= 1 << 3,
-		g_iSettings_SteamID64				= 1 << 4,
-	g_iSettings_Map						= 5,
-		g_iSettings_Map_Path				= 1 << 5,
-	g_iSettings_Time					= 6,
-		g_iSettings_Time_Date				= 1 << 6,
-		g_iSettings_Time_Timestamp			= 1 << 7,
-	g_iSettings_Section_Reload	= g_iSettings_Reload_OnConfigs | g_iSettings_Reload_OnSend,
-	g_iSettings_Section_SteamID	= g_iSettings_SteamID3 | g_iSettings_SteamID2 | g_iSettings_SteamID64,
-	g_iSettings_Section_Map		= g_iSettings_Map_Path,
-	g_iSettings_Section_Time	= g_iSettings_Time_Date | g_iSettings_Time_Timestamp };
-int g_iSettings, g_iType, g_iEmbedColors[Types];
-char g_szHost[128], g_szIP[24] = "(";
-DataPack g_dpWebhookIcon[Types], g_dpServerIcon;
-System2HTTPRequest g_hWebhook[Types];
 
-#define IsValidClient(%0) (%0 > 0 && %0 <= MaxClients && IsClientInGame( %0 ))
+public const char g_sHookName[][] = { "Bans", "Mutes", "Gags", "Silences", "Reports" };
+
+System2HTTPRequest g_hWebhook[Types];
+DataPack g_dpWebhookIcon[Types], g_dpServerIcon, g_dpSBPP_URL;
+char g_szHost[128], g_szIP[ 3 + 39 + 5 + 1 ] = "(";
+int g_iType, g_iTimeshift, g_iEmbedColors[Types];
+bool g_bFieldMap;
 
 public void OnPluginStart ()
 {
-	LoadTranslations( "sbpp_comms.phrases" );
 	LoadTranslations( "sbpp_discord.phrases" );
-	RegAdminCmd( "sm_discord_test", sm_discord_test_Handler, ADMFLAG_CONFIG | ADMFLAG_RCON, "Send test message to hook." );
-	RegAdminCmd( "sm_discord_reload", sm_discord_reload_Handler, ADMFLAG_CONFIG, "Reload config of sbpp_discord." );
+
+	RegAdminCmd( "sbpp_discord_test", sbpp_discord_test, ADMFLAG_CONFIG + ADMFLAG_RCON, "Send a test notification." );
+
 	ConVar Cvar = FindConVar( "hostname" );
 	Cvar.AddChangeHook( hostname_OnChanged );
 	hostname_OnChanged( Cvar, "", "" );
-	Settings_Reload();
+
+	System2HTTPRequest hReq = new System2HTTPRequest( OnIPGetted, "http://checkip.dyndns.org" );
+	hReq.GET();
+	CloseHandle( hReq );
+
+	SMCParser Parser = new SMCParser();
+	Parser.OnEnterSection = Settings_Parce_OnEnterSection;
+	Parser.OnKeyValue = Settings_Parse_Settings;
+	char szBuf[PLATFORM_MAX_PATH];
+	BuildPath( Path_SM, szBuf, sizeof szBuf, "configs/sbpp/discord.cfg" );
+	if ( FileExists( szBuf ) ) {
+		SMCError Error = Parser.ParseFile( szBuf );
+		if ( !Error ) {
+			for ( int i; i < Types; ++i ) {
+				Resolve( g_hWebhook, i );
+				Resolve( g_dpWebhookIcon, i ); } }
+		else {
+			LogError( Parser.GetErrorString( Error, szBuf, sizeof szBuf ) ? szBuf : "%t", "Unknown config parse error." ); } }
+	else {
+		LogError( "%t", "Config file '%s' not found.", szBuf ); }
 }
 
-public void OnConfigsExecuted ()
-{
-	if ( g_iSettings & g_iSettings_Reload_OnConfigs ) { Settings_Reload(); }
-}
-
-void OnIPGetted (const bool bSuccess, const char[] szError, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method)
-{
-	int i = 1;
-	if ( bSuccess && response.StatusCode == 200 ) {
-		response.GetContent( g_szIP[1], sizeof g_szIP-1, 76, "<" );
-		i = strlen( g_szIP )-1; }
-	FormatEx( g_szIP[i], sizeof g_szIP-i, ":%i)", FindConVar( "hostport" ).IntValue );
-}
-
-void hostname_OnChanged (const ConVar Cvar, const char[] szOld, const char[] szNew)
-{
-	Cvar.GetString( g_szHost, sizeof g_szHost );
-	EscapeRequest( g_szHost, sizeof g_szHost );
-}
-
-Action sm_discord_test_Handler (const int iClient, int iArgs)
+Action sbpp_discord_test (const int iClient, const int iArgs)
 {
 	if ( iArgs ) {
-		char szBuf[9], szMessage[128];
-		GetCmdArg( 1, szBuf, sizeof szBuf );
-		if ( iArgs > 1 ) { GetCmdArg( 2, szMessage, sizeof szMessage ); }
-		iArgs = StringToType( szBuf );
-		if ( iArgs != Type_Unknown ) {
-			SendEmbed( iClient, iClient, szMessage[0] ? szMessage : "(╯°□°）╯︵ ┻━┻", iArgs );
-			ReplyToCommand( iClient, "%t", "Test message have been send." ); }
-		else { ReplyToCommand( iClient, "%t", "Unknown hook type." ); } }
-	else { ReplyToCommand( iClient, "%t", "Usage: sm_discord_test" ); }
-	return Plugin_Handled;
-}
-
-Action sm_discord_reload_Handler (const int iClient, const int iArgs)
-{
-	Settings_Reload();
-	ReplyToCommand( iClient, "%t", "Config have been reloaded." );
+		char szBuf[256];
+		GetCmdArg( 1, szBuf, 10 );
+		int iType = StringToType( szBuf );
+		if ( iType != Type_Unknown ) {
+			int iTime;
+			if ( iArgs > 2 ) {
+				GetCmdArg( 3, szBuf, 9 );
+				iTime = StringToInt( szBuf ); }
+			SendEmbed( iClient, iClient, iArgs > 1 && GetCmdArg( 2, szBuf, sizeof szBuf ) ? szBuf : "", iType, iTime );
+			ReplyToCommand( iClient, "SB++ Discord: %t", "Test message have been send." ); }
+		else {
+			ReplyToCommand( iClient, "SB++ Discord: %t", "Unknown webhook." ); } }
+	else {
+		ReplyToCommand( iClient, "%t: %ssbpp_discord_test %t %t %t", "Syntax", GetCmdReplySource() == SM_REPLY_TO_CHAT ? "!" : "", "Name_of_webhook", "Message", "Duration" ); }
 	return Plugin_Handled;
 }
 
 #if defined _sourcebanspp_included
 public void SBPP_OnBanPlayer (int iAdmin, int iTarget, int iTime, const char[] szReason)
 {
-	SendEmbed( iAdmin, iTarget, szReason, Type_Ban, iTime );
+	SendEmbed( iTarget, iAdmin, szReason, Type_Ban, iTime );
 }
 
 public void SBPP_OnReportPlayer (int iReporter, int iTarget, const char[] szReason)
@@ -118,116 +98,196 @@ public void SBPP_OnReportPlayer (int iReporter, int iTarget, const char[] szReas
 #if defined _sourcecomms_included
 public void SourceComms_OnBlockAdded (int iAdmin, int iTarget, int iTime, int iCommType, char[] szReason)
 {
-	SendEmbed( iAdmin, iTarget, szReason, iCommType, iTime );
+	SendEmbed( iTarget, iAdmin, szReason, iCommType, iTime );
 }
 #else
 	#warning "Compiled without SourceComms natives."
 #endif
 
-void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, const int iType, const int iTime = 0)
+void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, const int iType, int iTime = 0)
 {
-	if ( g_iSettings & g_iSettings_Reload_OnSend ) { Settings_Reload(); }
+	#define IsValidClient(%0) (%0 > 0 && %0 <= MaxClients && IsClientInGame( %0 ))
+	#define copy(%0) (iLen += strcopy( szJson[ iLen ], sizeof szJson, %0 ))
+	#define format(%0,%1) (iLen += FormatEx( szJson[ iLen ], sizeof szJson, %0 , %1 ))
+	#define append(%0) (szJson[ iLen++ ] = %0)
+	#define new_field(%0); copy( "{\"name\":\"" ); format( "%t", %0 ); copy( "\",\"value\":\"" );
+
 	if ( g_hWebhook[ iType ] ) {
+		static char szJson[4196] = "payload_json={\"username\":\"SourceBans%%2B%%2B | ";
+		static int iLen, iFields;
+		
 		SetGlobalTransTarget( LANG_SERVER );
-		static char szJson[3038 + sizeof g_szHost-1 + sizeof g_szIP-1] = "payload_json={\"username\": \"SourceBans++\", \"avatar_url\": \"https://sbpp.github.io/img/favicons/android-chrome-512x512.png\", \"embeds\": [{\"color\": ";
-		int iFields, iLen = 143 + FormatEx( szJson[143], 10+24+1, "%i, \"author\": {\"name\": \"> ", g_iEmbedColors[iType] );
+		iLen = 47 + FormatEx( szJson[ 47 ], sizeof szJson, "%t", g_sHookName[ iType ] );
+		copy( "\",\"avatar_url\":\"https://sbpp.github.io/img/favicons/android-chrome-512x512.png\",\"embeds\":[{\"color\":" );
+		format( "%u", g_iEmbedColors[ iType ] );
+
+		copy( ",\"author\":{\"name\":\"" );
 		if ( IsValidClient( iAuthor ) ) {
-			GetClientName( iAuthor, szJson[iLen], 255-2+1 );
-			EscapeRequest( szJson[iLen], 255-2+1 );
-			iLen += strlen( szJson[iLen] );
-			iLen += strcopy( szJson[iLen], 47+1, "\", \"url\": \"https://steamcommunity.com/profiles/" );
-			GetClientAuthId( iAuthor, AuthId_SteamID64, szJson[iLen], 20+1 );
-			iLen += strlen( szJson[iLen] );
-			iLen += strcopy( szJson[iLen], 15+1, "\"}, \"fields\": [" ); }
-		else { iLen += FormatEx( szJson[iLen], 15+63+1, "%t\"}, \"fields\": [", "Author Console" ); }
-		if ( IsValidClient( iTarget ) ) {
-			iLen += FormatEx( szJson[iLen], 23+63+1, "{\"name\": \"%t\", \"value\": \"", "Violator" );
-			GetClientName( iTarget, szJson[iLen], 255-3-18-24-36-20+1 ); // 3 = ' []', 18 = SteamID3, 24 = SteamID2 + [], 36 = SteamURL, 20 = SteamID64;
-			EscapeMarkdown( szJson[iLen], 255-3-18-24-36-20+1 );
-			szJson[ iLen += strlen( szJson[iLen] ) ] = ' ';
-			++iLen;
-			if ( g_iSettings & g_iSettings_SteamID64 ) { szJson[iLen++] = '['; }
-			if ( g_iSettings & g_iSettings_SteamID3 && GetClientAuthId( iTarget, AuthId_Steam3, szJson[iLen], 18+1 ) ) { iLen += strlen( szJson[iLen] ); }
-			if ( g_iSettings & g_iSettings_SteamID2 ) {
-				szJson[iLen++] = '[';
-				GetClientAuthId( iTarget, AuthId_Steam2, szJson[iLen], 22+1 );
-				szJson[ iLen += strlen( szJson[iLen] ) ] = ']';
-				++iLen; }
-			if ( g_iSettings & g_iSettings_SteamID64 ) {
-				if ( szJson[iLen-1] == '[' ) { iLen += strcopy( szJson[iLen], 7+1, "[steam]" ); }
-				szJson[iLen++] = ']';
-				szJson[iLen++] = '(';
-				iLen += strcopy( szJson[iLen], 47+1, "https://steamcommunity.com/profiles/" );
-				GetClientAuthId( iTarget, AuthId_SteamID64, szJson[iLen], 20+1 );
-				iLen += strlen( szJson[iLen] );
-				szJson[iLen++] = ')'; }
-			szJson[ iLen++ ] = '\"';
-			szJson[ iLen++ ] = '}';
-			++iFields; }
-		if ( szMessage[0] ) {
-			if ( iFields++ ) { szJson[ iLen++ ] = ','; }
-			iLen += FormatEx( szJson[iLen], 23+63+1, "{\"name\": \"%t\", \"value\": \"", "Reason" );
-			strcopy( szJson[iLen], 255+1, szMessage );
-			EscapeMarkdown( szJson[iLen], 255+1 );
-			szJson[ iLen += strlen( szJson[iLen] ) ] = '\"';
-			++iLen;
-			szJson[ iLen++ ] = '}'; }
-		if ( iType != Type_Report ) {
-			if ( iType > Type_Ban ) {
-				if ( iFields++ ) { szJson[ iLen++ ] = ','; }
-				iLen += FormatEx( szJson[iLen], 23+63+63+2+1, "{\"name\": \"%t\", \"value\": \"%t\"}", "CommType", iType == Type_Mute ? "Mute" : iType == Type_Gag ? "Gag" : "Silence" ); }
-			if ( iFields++ ) { szJson[ iLen++ ] = ','; }
-			iLen += FormatEx( szJson[iLen], 23+63+63+2+1, "{\"name\": \"%t\", \"value\": \"%t\"}", "Duration", !iTime ? "ReasonPanel_Perm" : iTime == -1 ? "ReasonPanel_Temp" : "ReasonPanel_Time", iTime ); }
-		if ( g_iSettings & g_iSettings_Map_Path ) {
-			if ( iFields++ ) { szJson[ iLen++ ] = ','; }
-			iLen += FormatEx( szJson[iLen], 23+63+1, "{\"name\": \"%t\", \"value\": \"", "Map" );
-			GetCurrentMap( szJson[iLen], 255+1 );
-			szJson[ iLen += strlen( szJson[iLen] ) ] = '\"';
-			++iLen;
-			szJson[ iLen++ ] = '}'; }
-		if ( g_iSettings & g_iSettings_Section_Time ) {
-			if ( iFields++ ) { szJson[ iLen++ ] = ','; }
-			iLen += FormatEx( szJson[iLen], 23+63+1, "{\"name\": \"%t\", \"value\": \"", "Time" );
-			int iTimestamp = GetTime();
-			if ( g_iSettings & g_iSettings_Time_Date ) {
-				FormatTime( szJson[iLen], 20+1, "%Y.%m.%d, %H:%M:%S", iTimestamp );
-				if ( (iLen += 20), g_iSettings & g_iSettings_Time_Timestamp ) { iLen += FormatEx( szJson[iLen], 6+10+1, " ... %i.", iTimestamp ); }
-				else { szJson[ iLen++ ] = '.'; } }
-			else { iLen += FormatEx( szJson[iLen], 10+1+1, "%i.", iTimestamp ); }
-			szJson[ iLen++ ] = '\"';
-			szJson[ iLen++ ] = '}'; }
-		iLen += strcopy( szJson[iLen], 22+1, "],\"thumbnail\":{\"url\":\"" );
+			GetClientName( iAuthor, szJson[ iLen ], 256 );
+			iLen += EscapeRequest( szJson[ iLen ], 256 );
+			copy( "\"},\"description\":\"" );
+			#define iClient iAuthor
+			#include "inline/FormatPlayerLinks.sp"
+			append( '"' ); }
+		else { format( "%t" ... "\"}", "Console" ); }
+
+		copy( ",\"thumbnail\":{\"url\":\"" );
 		if ( g_dpWebhookIcon[ iType ] ) {
-			g_dpWebhookIcon[ iType ].ReadString( szJson[iLen], 512 );
 			g_dpWebhookIcon[ iType ].Reset();
-			iLen += strlen( szJson[iLen] );
-			szJson[iLen++] = '"';
-			szJson[iLen++] = '}';
-			szJson[iLen++] = ','; }
-		else { iLen += strcopy( szJson[iLen], 62+3+1, "https://sbpp.github.io/img/favicons/android-chrome-512x512.png" ... "\"}," ); }
-		iLen += FormatEx( szJson[iLen], 33 + sizeof g_szHost-1 + sizeof g_szIP-1 + 1, "\"footer\":{\"text\":\"%s %s\",\"icon_url\":\"", g_szHost, g_szIP );
+			g_dpWebhookIcon[ iType ].ReadString( szJson[ iLen ], 512 );
+			iLen += strlen( szJson[ iLen ] );
+			append( '"' );
+			append( '}' ); }
+		else { copy( "https://sbpp.github.io/img/favicons/android-chrome-512x512.png" ... "\"}" ); }
+
+		copy( ",\"footer\":{\"text\":\"" );
+		copy( g_szHost );
+		append( ' ' );
+		copy( g_szIP );
+		copy( "\",\"icon_url\":\"" );
 		if ( g_dpServerIcon ) {
-			g_dpServerIcon.ReadString( szJson[iLen], 512 );
 			g_dpServerIcon.Reset();
-			iLen += strlen( szJson[iLen] );
-			szJson[iLen++] = '"';
-			szJson[iLen++] = '}';
-			szJson[iLen++] = '}';
-			szJson[iLen++] = ']';
-			szJson[iLen++] = '}';
-			szJson[iLen] = '\0'; }
-		else { iLen += strcopy( szJson[iLen], 62+5+1, "https://sbpp.github.io/img/favicons/android-chrome-512x512.png" ... "\"}}]}" ); }
+			g_dpServerIcon.ReadString( szJson[ iLen ], 512 );
+			iLen += strlen( szJson[ iLen ] );
+			append( '"' );
+			append( '}' ); }
+		else { copy( "https://sbpp.github.io/img/favicons/android-chrome-512x512.png" ... "\"}" ); }
+
+		copy( ",\"timestamp\":\"" );
+		FormatTime( szJson[ iLen ], sizeof szJson, "%FT%T", GetTime() - g_iTimeshift );
+		iLen += strlen( szJson[ iLen ] );
+		append( '"' );
+
+		iFields = 0;
+		copy( ",\"fields\":[" );
+
+		if ( szMessage[0] ) {
+			++iFields;
+			new_field( iType == Type_Report ? "Message:" : "Reason:" );
+			strcopy( szJson[ iLen ], 256, szMessage );
+			iLen += EscapeMarkdown( szJson[ iLen ], 256 );
+			append( '"' );
+			append( '}' ); }
+
+		if ( iType != Type_Report ) {
+			if ( iFields++ ) { append( ',' ); }
+			new_field( "Duration:" );
+			if ( !iTime ) {
+				format( "%t\"}", "Permanent." ); }
+			else if ( iType != Type_Ban && iTime == -1 ) {
+				format( "%t\"}", "Session." ); }
+			else {
+				#define T1 ... " {N == 1}"
+				#define T2 ... " {N % 10 == 1 && N % 100 != 11}"
+				#define T3 ... " {N % 10 > 1 && N % 10 < 5}"
+				#define T4 ... " {N % 10 > 5 || N % 100 == 11}"
+				#define generate_phrases(%0) { %0T1, %0T2, %0T3, %0T4 }
+
+				static const char szTimes[][][] = {
+					generate_phrases( "Years" ),
+					generate_phrases( "Months" ),
+					generate_phrases( "Weeks" ),
+					generate_phrases( "Days" ),
+					generate_phrases( "Hours" ),
+					generate_phrases( "Minutes" ) };
+
+				#undef T1
+				#undef T2
+				#undef T3
+				#undef T4
+				#undef generate_phrases
+
+				static int i, iTimes[6];
+				iTimes[0] = iTime / (365 * 24 * 60);
+				iTime     = iTime % (365 * 24 * 60);
+				iTimes[1] = iTime / (30 * 24 * 60);
+				iTime     = iTime % (30 * 24 * 60);
+				iTimes[2] = iTime / (7 * 24 * 60);
+				iTime     = iTime % (7 * 24 * 60);
+				iTimes[3] = iTime / (24 * 60);
+				iTime     = iTime % (24 * 60);
+				iTimes[4] = iTime / 60;
+				iTimes[5] = iTime % 60;
+
+				for ( i = 0; i < sizeof iTimes; ++i ) {
+					if ( iTimes[i] ) {
+						format( "%u ", iTimes[i] );
+						if ( iTimes[i] == 1 ) {
+							format( "%t", szTimes[i][0] ); }
+						else if ( iTimes[i] % 10 == 1 ) {
+							if ( iTimes[i] % 100 == 11 ) {
+								format( "%t", szTimes[i][3] ); }
+							else {
+								format( "%t", szTimes[i][1] ); } }
+						else if ( iTimes[i] % 10 > 5 ) {
+							format( "%t", szTimes[i][2] ); }
+						else {
+							format( "%t", szTimes[i][3] ); }
+						++i;
+						break; } }
+
+				for ( ; i < sizeof iTimes; ++i ) {
+					if ( iTimes[i] ) {
+						format( ", %u ", iTimes[i] );
+						if ( iTimes[i] == 1 ) {
+							format( "%t", szTimes[i][0] ); }
+						else if ( iTimes[i] % 10 == 1 ) {
+							if ( iTimes[i] % 100 == 11 ) {
+								format( "%t", szTimes[i][3] ); }
+							else {
+								format( "%t", szTimes[i][1] ); } }
+						else if ( iTimes[i] % 10 > 5 ) {
+							format( "%t", szTimes[i][2] ); }
+						else {
+							format( "%t", szTimes[i][3] ); } } }
+				append( '.' );
+				append( '"' );
+				append( '}' ); } }
+
+		if ( IsValidClient( iTarget ) ) {
+			if ( iFields++ ) { append( ',' ); }
+			new_field( iType == Type_Report ? "Violator:" : "Blocked by:" );
+			GetClientName( iTarget, szJson[ iLen ], 256 );
+			iLen += EscapeMarkdown( szJson[ iLen ], 256 );
+			append( '\\' );
+			append( 'n' );
+			#define iClient iTarget
+			#include "inline/FormatPlayerLinks.sp"
+			#undef iClient
+			append( '"' );
+			append( '}' ); }
+		else if ( iType != Type_Report ) {
+			if ( iFields++ ) { append( ',' ); }
+			new_field( "Blocked by" );
+			format( "%t\"}", "Console" ); }
+
+		if ( g_bFieldMap ) {
+			if ( iFields ) { append( ',' ); }
+			new_field( "Map:" );
+			iLen += GetCurrentMap( szJson[ iLen ], 256 );
+			append( '"' );
+			append( '}' ); }
+		append( ']' );
+		append( '}' );
+		append( ']' );
+		append( '}' );
+		szJson[ iLen ] = '\0';
+
 		g_hWebhook[ iType ].SetData( szJson );
 		g_hWebhook[ iType ].POST(); }
+	#undef IsValidClient
+	#undef copy
+	#undef format
+	#undef append
+	#undef new_field
 }
 
-void SendEmbed_Callback (const bool bSuccess, const char[] szError, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method)
+public void SendEmbed_Callback (const bool bSuccess, const char[] szError, System2HTTPRequest request, System2HTTPResponse response, HTTPRequestMethod method)
 {
-	if ( bSuccess && response ) {
-		if ( response.StatusCode != 204 ) { LogError( "%t", "HTTP request failed with code: %i.%t", response.StatusCode, (response.StatusCode == 0 || response.StatusCode == 200) ? " Webhooks url can be incorrect." : "Empty" ); }}
+	if ( bSuccess && response && response.StatusCode != 204 ) { LogError( "%t", "HTTP request failed with code: %u.%t", response.StatusCode, (response.StatusCode == 0 || response.StatusCode == 200) ? " Webhook url can be incorrect." : "" ); }
 }
 
-void EscapeMarkdown (char[] szStr, const int iSize)
+int EscapeMarkdown (char[] szStr, const int iSize)
 {
 	ReplaceString( szStr, iSize, "\\", "\\\\" );
 	ReplaceString( szStr, iSize, "`", "\\`" );
@@ -241,104 +301,22 @@ void EscapeMarkdown (char[] szStr, const int iSize)
 	ReplaceString( szStr, iSize, "]", "\\]" );
 	ReplaceString( szStr, iSize, "(", "\\(" );
 	ReplaceString( szStr, iSize, ")", "\\)" );
-	EscapeRequest( szStr, iSize );
+	return EscapeRequest( szStr, iSize );
 }
 
-void EscapeRequest (char[] szStr, const int iSize)
+int EscapeRequest (char[] szStr, const int iSize)
 {
 	ReplaceString( szStr, iSize, "\"", "\\\"" );
 	ReplaceString( szStr, iSize, "\\", "\\\\" );
-	int i = strlen( szStr );
-	if ( i == iSize-1 ) {
-		while ( --i != -1 && szStr[i] == '\\' ) {}
-		szStr[ iSize-1-((iSize-2-i)%2) ] = '\0'; }
-}
+	ReplaceString( szStr, iSize, "&", "%%26" );
+	ReplaceString( szStr, iSize, "+", "%%2B" );
 
-void Settings_Reload ()
-{
-	System2HTTPRequest hReq = new System2HTTPRequest( OnIPGetted, "http://checkip.dyndns.org" );
-	hReq.GET();
-	CloseHandle( hReq );
-	int i;
-	for ( ; i < Types; ++i ) {
-		delete g_hWebhook[i];
-		delete g_dpWebhookIcon[i]; }
-	delete g_dpServerIcon;
-	g_iSettings = g_iSettings_SteamID3;
-	g_iEmbedColors = { 0xDA1D87, 0x4362FA, 0x4362FA, 0x4362FA, 0xF9D942 };
-	SMCParser Parser = new SMCParser();
-	Parser.OnEnterSection = Settings_Parce_OnEnterSection;
-	char szBuf[PLATFORM_MAX_PATH];
-	BuildPath( Path_SM, szBuf, sizeof szBuf, "configs/sbpp/discord.cfg" );
-	if ( FileExists( szBuf ) ) {
-		SMCError Status = Parser.ParseFile( szBuf );
-		if ( Status != SMCError_Okay ) { LogError( Parser.GetErrorString( Status, szBuf, sizeof szBuf ) ? szBuf : "%t", "Unknown config parse error." ); } }
-	for ( i = 0; i < Types; ++i ) {
-		Resolve( g_hWebhook, i );
-		Resolve( g_dpWebhookIcon, i ); }
-}
+	int iLen = strlen( szStr );
+	if ( iLen == iSize-1 ) {	/* Stripping backslashes which can escape quote sign in JSON. */
+		while ( --iLen != -1 && szStr[ iLen ] == '\\' ) {}
+		szStr[ iSize - 1 - ((iSize - 2 - iLen) % 2) ] = '\0'; }
 
-SMCResult Settings_Parce_OnEnterSection (const SMCParser Parser, const char[] szSection, const bool opt_quotes)
-{
-	if ( !strcmp( szSection, "Settings" ) ) {
-		Parser.OnKeyValue = Settings_Parse_Settings; }
-	else if ( !strcmp( szSection, "Hooks" ) ) {
-		Parser.OnKeyValue = Settings_Parse_Hooks; }
-	else {
-		g_iType = StringToType( szSection ); }
-	return SMCParse_Continue;
-}
-
-SMCResult Settings_Parse_Settings (const SMCParser Parser, const char[] szKey, const char[] szValue, const bool key_quotes, const bool value_quotes)
-{
-	if ( szValue[0] ) {
-		#define SetFlags(%0,%1) (g_iSettings & ~%0 | StringToInt( szValue ) << %1 & %0)
-		if ( !strcmp( "Reload On", szKey ) ) {
-			g_iSettings = SetFlags( g_iSettings_Section_Reload, g_iSettings_Reload ); }
-		else if ( !strcmp( "SteamID Version", szKey ) ) {
-			g_iSettings = SetFlags( g_iSettings_Section_SteamID, g_iSettings_SteamID ); }
-		else if ( !strcmp( "Map", szKey ) ) {
-			g_iSettings = SetFlags( g_iSettings_Section_Map, g_iSettings_Map ); }
-		else if ( !strcmp( "Time", szKey ) ) {
-			g_iSettings = SetFlags( g_iSettings_Section_Time, g_iSettings_Time ); }
-		#undef SetFlags
-		else if ( !strcmp( "Server Icon URL", szKey ) ) {
-			g_dpServerIcon = new DataPack();
-			g_dpServerIcon.WriteString( szValue );
-			g_dpServerIcon.Reset(); } }
-	return SMCParse_Continue;
-}
-
-SMCResult Settings_Parse_Hooks (const SMCParser Parser, const char[] szKey, const char[] szValue, const bool key_quotes, const bool value_quotes)
-{
-	if ( szValue[0] && g_iType != Type_Unknown ) {
-		if ( !strcmp( "Color", szKey ) ) {
-			g_iEmbedColors[g_iType] = StringToInt( szValue, 16 ); }
-		else if ( !strcmp( "Icon", szKey ) ) {
-			int iRedir = StringToType( szValue );
-			if ( iRedir == Type_Unknown ) {
-				g_dpWebhookIcon[ g_iType ] = new DataPack();
-				g_dpWebhookIcon[ g_iType ].WriteString( szValue );
-				g_dpWebhookIcon[ g_iType ].Reset(); }
-			else {
-				g_dpWebhookIcon[ g_iType ] = view_as<DataPack>( iRedir + 1 ); } }
-		else if ( !strcmp( "Webhook", szKey ) ) {
-			int iRedir = StringToType( szValue );
-			if ( iRedir == Type_Unknown ) {
-				g_hWebhook[ g_iType ] = new System2HTTPRequest( SendEmbed_Callback, szValue ); }
-			else {
-				g_hWebhook[ g_iType ] = view_as<System2HTTPRequest>( iRedir + 1 ); } } }
-	return SMCParse_Continue;
-}
-
-void Resolve (Handle[] hRedir, const int iType, const int it = 0)
-{
-	if ( it < Types ) {
-		int i = view_as<int>( hRedir[ iType ] );
-		if ( i > Type_Unknown + 1 && i < Types + 1 ) {
-			Resolve( hRedir, --i, it + 1 );
-			hRedir[ iType ] = view_as<int>( hRedir[i] ) > Types ? CloneHandle( hRedir[ i ] ) : INVALID_HANDLE; } }
-	else { hRedir[ iType ] = INVALID_HANDLE; }
+	return strlen( szStr );
 }
 
 int StringToType (const char[] szStr)
@@ -349,4 +327,79 @@ int StringToType (const char[] szStr)
 	else if	( !strcmp( "Gags", szStr, false ) ) { return Type_Gag; }
 	else if	( !strcmp( "Reports", szStr, false ) ) { return Type_Report; }
 	else { return Type_Unknown; }
+}
+
+void Resolve (Handle[] hRedir, const int iType, const int it = 0)
+{
+	if ( it < Types ) {
+		int i = view_as<int>( hRedir[ iType ] );
+		if ( i > Type_Unknown + 1 && i < Types + 1 ) {
+			Resolve( hRedir, --i, it + 1 );
+			hRedir[ iType ] = view_as<int>( hRedir[i] ) > Types || view_as<int>( hRedir[i] ) < Type_Unknown + 1 ? CloneHandle( hRedir[ i ] ) : INVALID_HANDLE; } }
+	else { hRedir[ iType ] = INVALID_HANDLE; }
+}
+
+SMCResult Settings_Parce_OnEnterSection (const SMCParser Parser, const char[] szSection, const bool opt_quotes)
+{
+	if ( !strcmp( szSection, "Webhooks" ) ) {
+		Parser.OnKeyValue = Settings_Parse_Hooks; }
+	else {
+		g_iType = StringToType( szSection ); }
+	return SMCParse_Continue;
+}
+
+SMCResult Settings_Parse_Settings (const SMCParser Parser, const char[] szKey, const char[] szValue, const bool key_quotes, const bool value_quotes)
+{
+	if ( szValue[0] ) {
+		if (      !strcmp( szKey, "SourceBans++ URL" ) ) {
+			g_dpSBPP_URL = new DataPack();
+			g_dpSBPP_URL.WriteString( szValue ); }
+		else if ( !strcmp( szKey, "Server icon URL" ) ) {
+			g_dpServerIcon = new DataPack();
+			g_dpServerIcon.WriteString( szValue ); }
+		else if ( !strcmp( szKey, "Timezone shift" ) ) {
+			g_iTimeshift = StringToInt( szValue ); }
+		else if ( !strcmp( szKey, "Field with map" ) ) {
+			g_bFieldMap = szValue[0] == 'y'; } }
+	return SMCParse_Continue;
+}
+
+SMCResult Settings_Parse_Hooks (const SMCParser Parser, const char[] szKey, const char[] szValue, const bool key_quotes, const bool value_quotes)
+{
+	if ( szValue[0] && g_iType != Type_Unknown ) {
+		if (      !strcmp( szKey, "Color" ) ) {
+			g_iEmbedColors[ g_iType ] = StringToInt( szValue, 16 ); }
+		else if ( !strcmp( szKey, "Icon" ) ) {
+			int iRedir = StringToType( szValue );
+			if ( iRedir == Type_Unknown ) {
+				g_dpWebhookIcon[ g_iType ] = new DataPack();
+				g_dpWebhookIcon[ g_iType ].WriteString( szValue ); }
+			else {
+				g_dpWebhookIcon[ g_iType ] = view_as<DataPack>( iRedir + 1 ); } }
+		else if ( !strcmp( szKey, "Webhook" ) ) {
+			int iRedir = StringToType( szValue );
+			if ( iRedir == Type_Unknown ) {
+				g_hWebhook[ g_iType ] = new System2HTTPRequest( SendEmbed_Callback, szValue ); }
+			else {
+				g_hWebhook[ g_iType ] = view_as<System2HTTPRequest>( iRedir + 1 ); } } }
+	return SMCParse_Continue;
+}
+
+void hostname_OnChanged (const ConVar Cvar, const char[] szOld, const char[] szNew)
+{
+	Cvar.GetString( g_szHost, sizeof g_szHost );
+	EscapeRequest( g_szHost, sizeof g_szHost );
+}
+
+public void OnIPGetted (const bool bSuccess, const char[] szError, const System2HTTPRequest request, const System2HTTPResponse response, const HTTPRequestMethod method)
+{
+	int i = 1;
+	if ( bSuccess && response && response.StatusCode == 200 ) {
+		response.GetContent( g_szIP[1], 39 + 1, 76, "<", false );
+		i = strlen( g_szIP[1] ) + 1; }
+	g_szIP[i] = ':';
+	FindConVar( "hostport" ).GetString( g_szIP[++i], 5 + 1 );
+	i += strlen( g_szIP[i] );
+	g_szIP[i] = ')';
+	g_szIP[++i] = '\0';
 }

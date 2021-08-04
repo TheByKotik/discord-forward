@@ -7,5 +7,5 @@
 
 Required: [System2](https://github.com/dordnung/System2)
 
-[![Build Status](https://travis-ci.com/TheByKotik/sbpp_discord.svg?branch=master)](https://travis-ci.org/TheByKotik/sbpp_discord)
+[![Build](https://github.com/TheByKotik/sbpp_discord/actions/workflows/build.yml/badge.svg)](https://github.com/TheByKotik/sbpp_discord/actions/workflows/build.yml)
 ![Release](https://img.shields.io/github/release/TheByKotik/sbpp_discord.svg)
