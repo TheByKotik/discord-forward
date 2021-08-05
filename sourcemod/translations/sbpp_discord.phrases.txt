@@ -7,6 +7,7 @@
 	"Blocked by:"
 	{
 		"en"	"Blocked by:"
+		"pt"	"Bloqueado por:"
 		"ru"	"Заблокирован:"
 	}
 	"Console"
@@ -19,6 +20,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"	"Config file '{1}' not found."
+		"pt"	"Arquivo de configuração '{1}' não encontrado."
 		"ru"	"Файл настроек '{1}' не найден."
 	}
 	"Duration"
@@ -37,7 +39,7 @@
 	{
 		"#format"	"{1:u},{2:t}"
 		"en"	"HTTP request failed with code: {1}.{2}"
-		"pt"	"A solicitação HTTP falhou com o código: {1}.{2}"
+		"pt"	"Solicitação HTTP falhou com o código: {1}.{2}"
 		"ru"	"HTTP запрос провалился с кодом: {1}.{2}"
 	}
 	"Map:"
@@ -55,7 +57,7 @@
 	"Test message have been send."
 	{
 		"en"	"Test message have been send."
-		"pt"	"A mensagem de teste foi enviada."
+		"pt"	"Mensagem de teste foi enviada."
 		"ru"	"Тестовое сообщение отправлено."
 	}
 	"Unknown config parse error."
@@ -67,23 +69,25 @@
 	"Unknown webhook."
 	{
 		"en"	"Unknown webhook."
-		"pt"	"Tipo de gancho desconhecido."
+		"pt"	"Webhook desconhecido."
 		"ru"	"Неизвестный вебхук."
 	}
 	"Syntax"
 	{
 		"en"	"Syntax"
+		"pt"	"Sintaxe"
 		"ru"	"Синтаксис"
 	}
 	"Message:"
 	{
 		"en"	"Message:"
-		"pt"	"Message:"
+		"pt"	"Mensagem:"
 		"ru"	"Сообщение:"
 	}
 	"Name_of_webhook"
 	{
 		"en"	"Name_of_webhook"
+		"pt"	"Name_of_webhook"
 		"ru"	"Название_вебхука"
 	}
 	"Violator:"
@@ -95,7 +99,7 @@
 	" Webhook url can be incorrect."
 	{
 		"en"	" Webhook url can be incorrect."
-		"pt"	" O URL dos webhook pode estar incorreto."
+		"pt"	" URL do webhook pode estar incorreto."
 		"ru"	" URL вебхука может быть некорректным."
 	}
 	"Bans"
@@ -126,6 +130,7 @@
 	"Permanent."
 	{
 		"en"	"Permanent."
+		"pt"	"Permanente."
 		"ru"	"Бессрочно."
 	}
 	"Session."
@@ -136,121 +141,145 @@
 	"Years {N == 1}"
 	{
 		"en"	"year"
+		"pt"	"ano"
 		"ru"	"год"
 	}
 	"Years {N % 10 == 1 && N % 100 != 11}"
 	{
 		"en"	"years"
+		"pt"	"anos"
 		"ru"	"год"
 	}
 	"Years {N % 10 > 1 && N % 10 < 5}"
 	{
 		"en"	"years"
+		"pt"	"anos"
 		"ru"	"года"
 	}
 	"Years {N % 10 > 5 || N % 100 == 11}"
 	{
 		"en"	"years"
+		"pt"	"anos"
 		"ru"	"лет"
 	}
 	"Months {N == 1}"
 	{
 		"en"	"month"
+		"pt"	"mês"
 		"ru"	"месяц"
 	}
 	"Months {N % 10 == 1 && N % 100 != 11}"
 	{
 		"en"	"months"
+		"pt"	"meses"
 		"ru"	"месяц"
 	}
 	"Months {N % 10 > 1 && N % 10 < 5}"
 	{
 		"en"	"months"
+		"pt"	"meses"
 		"ru"	"месяца"
 	}
 	"Months {N % 10 > 5 || N % 100 == 11}"
 	{
 		"en"	"months"
+		"pt"	"meses"
 		"ru"	"месяцев"
 	}
 	"Weeks {N == 1}"
 	{
 		"en"	"week"
+		"pt"	"semana"
 		"ru"	"неделя"
 	}
 	"Weeks {N % 10 == 1 && N % 100 != 11}"
 	{
 		"en"	"weeks"
+		"pt"	"semanas"
 		"ru"	"неделя"
 	}
 	"Weeks {N % 10 > 1 && N % 10 < 5}"
 	{
 		"en"	"weeks"
+		"pt"	"semanas"
 		"ru"	"недели"
 	}
 	"Weeks {N % 10 > 5 || N % 100 == 11}"
 	{
 		"en"	"weeks"
+		"pt"	"semanas"
 		"ru"	"недель"
 	}
 	"Days {N == 1}"
 	{
 		"en"	"day"
+		"pt"	"dia"
 		"ru"	"день"
 	}
 	"Days {N % 10 == 1 && N % 100 != 11}"
 	{
 		"en"	"days"
+		"pt"	"dias"
 		"ru"	"день"
 	}
 	"Days {N % 10 > 1 && N % 10 < 5}"
 	{
 		"en"	"days"
+		"pt"	"dias"
 		"ru"	"дня"
 	}
 	"Days {N % 10 > 5 || N % 100 == 11}"
 	{
 		"en"	"days"
+		"pt"	"dias"
 		"ru"	"дней"
 	}
 	"Hours {N == 1}"
 	{
 		"en"	"hour"
+		"pt"	"hora"
 		"ru"	"час"
 	}
 	"Hours {N % 10 == 1 && N % 100 != 11}"
 	{
 		"en"	"hours"
+		"pt"	"horas"
 		"ru"	"час"
 	}
 	"Hours {N % 10 > 1 && N % 10 < 5}"
 	{
 		"en"	"hours"
+		"pt"	"horas"
 		"ru"	"часа"
 	}
 	"Hours {N % 10 > 5 || N % 100 == 11}"
 	{
 		"en"	"hours"
+		"pt"	"horas"
 		"ru"	"часов"
 	}
 	"Minutes {N == 1}"
 	{
 		"en"	"minute"
+		"pt"	"minuto"
 		"ru"	"минута"
 	}
 	"Minutes {N % 10 == 1 && N % 100 != 11}"
 	{
 		"en"	"minutes"
+		"pt"	"minutos"
 		"ru"	"минута"
 	}
 	"Minutes {N % 10 > 1 && N % 10 < 5}"
 	{
 		"en"	"minutes"
+		"pt"	"minutos"
 		"ru"	"минуты"
 	}
 	"Minutes {N % 10 > 5 || N % 100 == 11}"
 	{
 		"en"	"minutes"
+		"pt"	"minutos"
 		"ru"	"минут"
 	}
 }
