@@ -35,6 +35,11 @@
 		"pt"	"Duração:"
 		"ru"	"Срок:"
 	}
+	"Failed to get timezone offset."
+	{
+		"en"	"Failed to get timezone offset."
+		"ru"	"Не удалось получить смещение часового пояса."
+	}
 	"HTTP request failed with code: %u.%t"
 	{
 		"#format"	"{1:u},{2:t}"
@@ -48,11 +53,40 @@
 		"pt"	"Mapa:"
 		"ru"	"Карта:"
 	}
+	"Message:"
+	{
+		"en"	"Message:"
+		"pt"	"Mensagem:"
+		"ru"	"Сообщение:"
+	}
+	"Name_of_webhook"
+	{
+		"en"	"Name_of_webhook"
+		"pt"	"Name_of_webhook"
+		"ru"	"Название_вебхука"
+	}
+	"Permanent."
+	{
+		"en"	"Permanent."
+		"pt"	"Permanente."
+		"ru"	"Бессрочно."
+	}
 	"Reason:"
 	{
 		"en"	"Reason:"
 		"pt"	"Motivo:"
 		"ru"	"Причина:"
+	}
+	"Session."
+	{
+		"en"	"Session."
+		"ru"	"Сессия."
+	}
+	"Syntax"
+	{
+		"en"	"Syntax"
+		"pt"	"Sintaxe"
+		"ru"	"Синтаксис"
 	}
 	"Test message have been send."
 	{
@@ -71,24 +105,6 @@
 		"en"	"Unknown webhook."
 		"pt"	"Webhook desconhecido."
 		"ru"	"Неизвестный вебхук."
-	}
-	"Syntax"
-	{
-		"en"	"Syntax"
-		"pt"	"Sintaxe"
-		"ru"	"Синтаксис"
-	}
-	"Message:"
-	{
-		"en"	"Message:"
-		"pt"	"Mensagem:"
-		"ru"	"Сообщение:"
-	}
-	"Name_of_webhook"
-	{
-		"en"	"Name_of_webhook"
-		"pt"	"Name_of_webhook"
-		"ru"	"Название_вебхука"
 	}
 	"Violator:"
 	{
@@ -126,17 +142,6 @@
 	{
 		"en"	"Reports"
 		"ru"	"Жалобы"
-	}
-	"Permanent."
-	{
-		"en"	"Permanent."
-		"pt"	"Permanente."
-		"ru"	"Бессрочно."
-	}
-	"Session."
-	{
-		"en"	"Session."
-		"ru"	"Сессия."
 	}
 	"Years {N == 1}"
 	{

@@ -5,7 +5,7 @@ public Plugin myinfo = {
 	name        = "SourceBans++ Discord",
 	author      = "Kotik. Fork of RumbleFrog, SourceBans++ Dev Team.",
 	description = "Sends notifications to Discord about bans, comms and reports.",
-	version     = "1.7.0-50",
+	version     = "1.7.0-51",
 	url         = "https://github.com/TheByKotik/sbpp_discord" };
 
 #include <system2>
@@ -27,7 +27,7 @@ public const char g_sHookName[][] = { "Bans", "Mutes", "Gags", "Silences", "Repo
 System2HTTPRequest g_hWebhook[Types];
 DataPack g_dpWebhookIcon[Types], g_dpServerIcon, g_dpSBPP_URL;
 char g_szHost[128], g_szIP[ 3 + 39 + 5 + 1 ] = "(";
-int g_iType, g_iTimeshift, g_iEmbedColors[Types];
+int g_iType, g_iTimezoneOffset, g_iEmbedColors[Types];
 bool g_bFieldMap;
 
 public void OnPluginStart ()
@@ -44,10 +44,24 @@ public void OnPluginStart ()
 	hReq.GET();
 	CloseHandle( hReq );
 
+	char szBuf[PLATFORM_MAX_PATH];
+	FormatTime( szBuf, 6, "%z", GetTime() );
+
+	if ( szBuf[0] ) {
+		szBuf[ 7 ] = szBuf[1];
+		szBuf[ 8 ] = szBuf[2];
+		szBuf[ 9 ] = '\0';
+		g_iTimezoneOffset = StringToInt( szBuf[7] ) * 60 * 60;
+		szBuf[ 7 ] = szBuf[3];
+		szBuf[ 8 ] = szBuf[4];
+		g_iTimezoneOffset += StringToInt( szBuf[7] ) * 60;
+		if ( szBuf[0] == '-' ) { g_iTimezoneOffset = -g_iTimezoneOffset; } }
+	else {
+		LogError( "%t", "Failed to get timezone offset." ); }
+
 	SMCParser Parser = new SMCParser();
 	Parser.OnEnterSection = Settings_Parce_OnEnterSection;
 	Parser.OnKeyValue = Settings_Parse_Settings;
-	char szBuf[PLATFORM_MAX_PATH];
 	BuildPath( Path_SM, szBuf, sizeof szBuf, "configs/sbpp/discord.cfg" );
 	if ( FileExists( szBuf ) ) {
 		SMCError Error = Parser.ParseFile( szBuf );
@@ -154,7 +168,7 @@ void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, co
 		else { copy( "https://sbpp.github.io/img/favicons/android-chrome-512x512.png" ... "\"}" ); }
 
 		copy( ",\"timestamp\":\"" );
-		FormatTime( szJson[ iLen ], sizeof szJson, "%FT%T", GetTime() - g_iTimeshift );
+		FormatTime( szJson[ iLen ], sizeof szJson, "%FT%T", GetTime() - g_iTimezoneOffset );
 		iLen += strlen( szJson[ iLen ] );
 		append( '"' );
 
@@ -357,8 +371,6 @@ SMCResult Settings_Parse_Settings (const SMCParser Parser, const char[] szKey, c
 		else if ( !strcmp( szKey, "Server icon URL" ) ) {
 			g_dpServerIcon = new DataPack();
 			g_dpServerIcon.WriteString( szValue ); }
-		else if ( !strcmp( szKey, "Timezone shift" ) ) {
-			g_iTimeshift = StringToInt( szValue ); }
 		else if ( !strcmp( szKey, "Field with map" ) ) {
 			g_bFieldMap = szValue[0] == 'y'; } }
 	return SMCParse_Continue;
