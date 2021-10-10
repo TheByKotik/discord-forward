@@ -272,7 +272,7 @@ void SendEmbed (const int iAuthor, const int iTarget, const char[] szMessage, co
 			append( '}' ); }
 		else if ( iType != Type_Report ) {
 			if ( iFields++ ) { append( ',' ); }
-			new_field( "Blocked by" );
+			new_field( "Blocked by:" );
 			format( "%t\"}", "Console" ); }
 
 		if ( g_bFieldMap ) {
