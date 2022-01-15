@@ -15,7 +15,7 @@
 			else { copy( "\\n*[steam](https://steamcommunity.com/profiles/" ); }
 			GetClientAuthId( iClient, AuthId_SteamID64, szJson[ iLen ], 22 );
 			iLen += strlen( szJson[ iLen ] );
-			copy( ")* | *[rep](http://steamrep.com/profiles/" );
+			copy( ")* | *[rep](https://steamrep.com/profiles/" );
 			GetClientAuthId( iClient, AuthId_SteamID64, szJson[ iLen ], 22 );
 			iLen += strlen( szJson[ iLen ] );
 			append( ')' );

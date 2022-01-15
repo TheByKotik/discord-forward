@@ -5,7 +5,7 @@ public Plugin myinfo = {
 	name        = "SourceBans++ Discord",
 	author      = "Kotik. Fork of RumbleFrog, SourceBans++ Dev Team.",
 	description = "Sends notifications to Discord about bans, comms and reports.",
-	version     = "1.7.0-51",
+	version     = "1.7.0-54",
 	url         = "https://github.com/TheByKotik/sbpp_discord" };
 
 #include <system2>
